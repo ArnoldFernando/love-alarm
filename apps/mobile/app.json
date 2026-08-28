@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Love Alarm",
+    "slug": "love-alarm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lovealarm.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We use your approximate location to detect when someone you like is nearby.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We use your approximate location to detect when someone you like is nearby, even when the app is in the background."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.lovealarm.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    },
+    "web": {},
+    "plugins": [
+      "expo-secure-store",
+      "expo-location",
+      "expo-notifications",
+      "expo-router"
+    ],
+    "extra": {
+      "apiUrl": "EXPO_PUBLIC_API_URL"
+    }
+  }
+}
+

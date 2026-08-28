@@ -1,0 +1,12 @@
+export interface AppNotification {
+  id: string
+  user_id: string
+  type: string
+  title: string
+  body: string
+  data?: Record<string, any>
+  read_at?: string
+  sent_at?: string
+  created_at: string
+  updated_at: string
+}

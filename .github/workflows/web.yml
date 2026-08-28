@@ -1,0 +1,47 @@
+name: Web CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'app/web/**'
+      - 'packages/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'app/web/**'
+      - 'packages/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/web/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd app/web
+          npm ci
+
+      - name: Type check
+        run: |
+          cd app/web
+          npm run type-check
+
+      - name: Lint
+        run: |
+          cd app/web
+          npm run lint
+
+      - name: Build
+        run: |
+          cd app/web
+          npm run build

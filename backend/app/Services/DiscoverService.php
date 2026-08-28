@@ -1,0 +1,106 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+
+class DiscoverService
+{
+    public function discover(User $user, array $filters = []): LengthAwarePaginator
+    {
+        $perPage = $filters['per_page'] ?? 20;
+
+        // Users the current user has blocked or been blocked by
+        $blockedIds = DB::table('blocks')
+            ->where('user_id', $user->id)
+            ->orWhere('blocked_user_id', $user->id)
+            ->pluck('user_id', 'blocked_user_id')
+            ->flatten()
+            ->unique()
+            ->values()
+            ->all();
+
+        $query = User::query()
+            ->where('users.id', '!=', $user->id)
+            ->where('users.account_status', 'active')
+            ->where('users.email_verified_at', '!=', null)
+            ->whereNotIn('users.id', $blockedIds)
+            ->whereHas('settings', function (Builder $q) {
+                $q->where('profile_visible', true);
+            })
+            ->whereHas('profile')
+            ->with(['profile', 'interests', 'photos']);
+
+        // Age range filter
+        if (! empty($filters['min_age']) || ! empty($filters['max_age'])) {
+            $query->whereHas('profile', function (Builder $q) use ($filters) {
+                if (! empty($filters['min_age'])) {
+                    $q->whereRaw('date_of_birth <= ?', [now()->subYears((int) $filters['min_age'])->format('Y-m-d')]);
+                }
+                if (! empty($filters['max_age'])) {
+                    $q->whereRaw('date_of_birth >= ?', [now()->subYears((int) $filters['max_age'])->format('Y-m-d')]);
+                }
+            });
+        }
+
+        // Gender filter
+        if (! empty($filters['gender'])) {
+            $query->whereHas('profile', function (Builder $q) use ($filters) {
+                $q->where('gender', $filters['gender']);
+            });
+        }
+
+        // School filter
+        if (! empty($filters['school'])) {
+            $query->whereHas('profile', function (Builder $q) use ($filters) {
+                $q->where('school', 'ILIKE', '%' . $filters['school'] . '%');
+            });
+        }
+
+        // Course filter
+        if (! empty($filters['course'])) {
+            $query->whereHas('profile', function (Builder $q) use ($filters) {
+                $q->where('course', 'ILIKE', '%' . $filters['course'] . '%');
+            });
+        }
+
+        // Interests filter
+        if (! empty($filters['interests']) && is_array($filters['interests'])) {
+            $query->whereHas('interests', function (Builder $q) use ($filters) {
+                $q->whereIn('interests.id', $filters['interests']);
+            });
+        }
+
+        // Exclude already crushed users if requested
+        if (! empty($filters['exclude_crushed'])) {
+            $crushedIds = $user->crushesSent()->pluck('to_user_id')->all();
+            $query->whereNotIn('users.id', $crushedIds);
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    public function getUserProfile(User $viewer, string $userId): ?User
+    {
+        $blocked = DB::table('blocks')
+            ->where(function ($q) use ($viewer, $userId) {
+                $q->where('user_id', $viewer->id)->where('blocked_user_id', $userId);
+            })
+            ->orWhere(function ($q) use ($viewer, $userId) {
+                $q->where('user_id', $userId)->where('blocked_user_id', $viewer->id);
+            })
+            ->exists();
+
+        if ($blocked) {
+            return null;
+        }
+
+        return User::where('id', $userId)
+            ->where('account_status', 'active')
+            ->with(['profile', 'interests', 'photos'])
+            ->first();
+    }
+}
