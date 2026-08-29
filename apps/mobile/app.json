@@ -3,11 +3,10 @@
     "name": "Love Alarm",
     "slug": "love-alarm",
     "version": "1.0.0",
+    "scheme": "lovealarm",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -23,27 +22,40 @@
       }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
       "package": "com.lovealarm.app",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
+        "ACCESS_BACKGROUND_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {},
     "plugins": [
+      [
+        "expo-router",
+        {
+          "root": "./src/app"
+        }
+      ],
       "expo-secure-store",
       "expo-location",
       "expo-notifications",
-      "expo-router"
+      "./plugins/withReactNativeNodeModulesDir.js"
     ],
+    "experiments": {
+      "tsconfigPaths": true
+    },
     "extra": {
-      "apiUrl": "EXPO_PUBLIC_API_URL"
+      "apiUrl": "EXPO_PUBLIC_API_URL",
+      "router": {
+        "origin": false,
+        "root": "./src/app"
+      },
+      "eas": {
+        "projectId": "49c1c1b4-4381-4533-9535-edf7a420b46c"
+      }
     }
   }
 }
-
