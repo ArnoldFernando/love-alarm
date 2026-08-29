@@ -1,42 +1,46 @@
 import { create } from "zustand"
 import * as SecureStore from "expo-secure-store"
+import { queryClient } from "@/lib/queryClient"
 
 interface User {
   id: string
-  email?: string
-  role: string
-  account_status: string
+  email: string
   profile?: {
-    username: string
     display_name: string
+    username: string
   }
 }
 
 interface AuthState {
-  user: User | null
   token: string | null
+  user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  setAuth: (user: User, token: string) => Promise<void>
-  clearAuth: () => Promise<void>
-  hydrate: () => Promise<void>
+  setAuth: (token: string, user: User) => void
+  logout: () => void
+  initialize: () => void
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
   token: null,
+  user: null,
   isAuthenticated: false,
   isLoading: true,
-  setAuth: async (user, token) => {
-    await SecureStore.setItemAsync("token", token)
-    set({ user, token, isAuthenticated: true, isLoading: false })
+
+  setAuth: (token, user) => {
+    SecureStore.setItemAsync("token", token)
+    queryClient.clear()
+    set({ token, user, isAuthenticated: true, isLoading: false })
   },
-  clearAuth: async () => {
-    await SecureStore.deleteItemAsync("token")
-    set({ user: null, token: null, isAuthenticated: false, isLoading: false })
+
+  logout: () => {
+    SecureStore.deleteItemAsync("token")
+    queryClient.clear()
+    set({ token: null, user: null, isAuthenticated: false, isLoading: false })
   },
-  hydrate: async () => {
+
+  initialize: async () => {
     const token = await SecureStore.getItemAsync("token")
-    set({ isLoading: false, isAuthenticated: !!token })
+    set({ token, isAuthenticated: !!token, isLoading: false })
   },
 }))

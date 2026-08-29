@@ -1,3 +1,6 @@
+import type { Profile } from './profile'
+import type { UserSettings } from './settings'
+
 export interface User {
   id: string
   email?: string
@@ -14,6 +17,7 @@ export interface User {
 export interface LoginRequest {
   email: string
   password: string
+  password_confirmation?: string
   device_name?: string
 }
 

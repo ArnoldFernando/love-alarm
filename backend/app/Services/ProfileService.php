@@ -46,7 +46,7 @@ class ProfileService
         $filename = Str::uuid() . '.' . $extension;
         $path = 'photos/' . $user->id . '/' . $filename;
 
-        $disk = Storage::disk(config('filesystems.default', 's3'));
+        $disk = Storage::disk('public');
         $disk->put($path, file_get_contents($file->getRealPath()), 'public');
 
         $url = $disk->url($path);

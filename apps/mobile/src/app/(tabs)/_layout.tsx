@@ -1,13 +1,18 @@
 import { Tabs } from "expo-router"
 import { Heart, Search, Bell, MessageCircle, User } from "lucide-react-native"
 
-export default function TabsLayout() {
+export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#e11d48",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarActiveTintColor: "#E11D48",
+        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarStyle: {
+          backgroundColor: "#FFFFFF",
+          borderTopWidth: 1,
+          borderTopColor: "#E5E7EB",
+        },
       }}
     >
       <Tabs.Screen

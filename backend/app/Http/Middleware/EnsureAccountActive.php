@@ -12,12 +12,11 @@ class EnsureAccountActive
     {
         $user = $request->user();
 
-        if (! $user || ! $user->isActive()) {
+        if (! $user || in_array($user->account_status, ['suspended', 'banned'])) {
             $status = $user?->account_status ?? 'inactive';
             $message = match ($status) {
                 'suspended' => 'Account suspended.',
                 'banned' => 'Account banned.',
-                'pending_verification' => 'Email not verified.',
                 default => 'Account inactive.',
             };
 

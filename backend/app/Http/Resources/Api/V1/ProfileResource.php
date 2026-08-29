@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Support\AvatarHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,8 +20,9 @@ class ProfileResource extends JsonResource
             'school' => $this->school,
             'course' => $this->course,
             'year_level' => $this->year_level,
-            'photos' => ProfilePhotoResource::collection($this->whenLoaded('photos')),
-            'interests' => InterestResource::collection($this->whenLoaded('interests')),
+            'email' => $this->user->email,
+            'photos' => ProfilePhotoResource::collection($this->user->photos),
+            'interests' => InterestResource::collection($this->user->interests),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

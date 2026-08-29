@@ -24,10 +24,11 @@ export default function LoginScreen() {
     setLoading(true)
     try {
       const res = await api.post("/auth/login", data)
+      console.log("LOGIN RESPONSE:", JSON.stringify(res.data))
       if (res.data.success) {
-        await setAuth(res.data.data.user, res.data.data.token)
-        router.replace("/(tabs)")
-      }
+  await setAuth(res.data.data.token, res.data.data.user)
+  router.replace("/(tabs)")
+}
     } catch (err: any) {
       Alert.alert("Login Failed", err.response?.data?.message || "Something went wrong")
     } finally {
