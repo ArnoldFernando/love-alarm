@@ -1,0 +1,66 @@
+import { z } from "zod"
+
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+  device_name: z.string().optional(),
+})
+
+export const registerSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+  password_confirmation: z.string(),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must be at most 30 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username may only contain letters, numbers, and underscores"),
+  display_name: z.string().max(100).optional(),
+}).refine((data) => data.password === data.password_confirmation, {
+  message: "Passwords do not match",
+  path: ["password_confirmation"],
+})
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+})
+
+export const resetPasswordSchema = z.object({
+  token: z.string(),
+  email: z.string().email("Invalid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters"),
+  password_confirmation: z.string(),
+}).refine((data) => data.password === data.password_confirmation, {
+  message: "Passwords do not match",
+  path: ["password_confirmation"],
+})
+
+export const changePasswordSchema = z.object({
+  current_password: z.string().min(1, "Current password is required"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters"),
+  password_confirmation: z.string(),
+}).refine((data) => data.password === data.password_confirmation, {
+  message: "Passwords do not match",
+  path: ["password_confirmation"],
+})
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, "Password is required"),
+})
+
+export type LoginInput = z.infer<typeof loginSchema>
+export type RegisterInput = z.infer<typeof registerSchema>
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>

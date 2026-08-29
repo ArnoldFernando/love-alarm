@@ -1,0 +1,7 @@
+export interface Match {
+  id: string;
+  user_one_id: string;
+  user_two_id: string;
+  matched_at: string;
+  created_at: string;
+}
