@@ -1,0 +1,16 @@
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.orig.*
+
+# PHP / Laravel
+vendor/
+backend/storage/*.key
+backend/.env
+.phpunit.result.cache
+
+# General
+.DS_Store
+*.log

@@ -1,0 +1,11 @@
+{
+  "name": "love-alarm",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "@types/react": "~18.2.45"
+  }
+}
