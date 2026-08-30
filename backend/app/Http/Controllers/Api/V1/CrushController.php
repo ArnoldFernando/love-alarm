@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Resources\Api\V1\CrushReceivedResource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\CrushRequest;
 use App\Http\Resources\Api\V1\CrushResource;
@@ -11,9 +12,7 @@ use Illuminate\Http\Request;
 
 class CrushController extends Controller
 {
-    public function __construct(private CrushService $crushService)
-    {
-    }
+    public function __construct(private CrushService $crushService) {}
 
     public function store(CrushRequest $request): JsonResponse
     {
@@ -51,5 +50,12 @@ class CrushController extends Controller
         $crushes = $this->crushService->getUserCrushes($request->user());
 
         return $this->successResponse(CrushResource::collection($crushes));
+    }
+
+    public function received(Request $request): JsonResponse
+    {
+        $crushes = $this->crushService->getCrushesReceived($request->user());
+
+        return $this->successResponse(CrushReceivedResource::collection($crushes));
     }
 }

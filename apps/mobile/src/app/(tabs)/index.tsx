@@ -13,20 +13,22 @@ export default function HomeScreen() {
   const [ringActive, setRingActive] = useState(false)
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["home-stats"],
-    queryFn: async () => {
-      const [alarmsRes, matchesRes, crushesRes] = await Promise.all([
-        api.get("/alarms"),
-        api.get("/matches"),
-        api.get("/crushes"),
-      ])
-      return {
-        alarms: alarmsRes.data.data?.length || 0,
-        matches: matchesRes.data.data?.length || 0,
-        crushes: crushesRes.data.data?.length || 0,
-      }
-    },
-  })
+  queryKey: ["home-stats"],
+  queryFn: async () => {
+    const [alarmsRes, matchesRes, likedRes, crushesReceivedRes] = await Promise.allSettled([
+      api.get("/alarms"),
+      api.get("/matches"),
+      api.get("/crushes"),
+      api.get("/crushes/received"),
+    ])
+    return {
+      alarms: alarmsRes.status === "fulfilled" ? alarmsRes.value.data.data?.length || 0 : 0,
+      matches: matchesRes.status === "fulfilled" ? matchesRes.value.data.data?.length || 0 : 0,
+      liked: likedRes.status === "fulfilled" ? likedRes.value.data.data?.length || 0 : 0,
+      crushes: crushesReceivedRes.status === "fulfilled" ? crushesReceivedRes.value.data.data?.length || 0 : 0,
+    }
+  },
+})
 
   const { data: recentAlarms } = useQuery({
     queryKey: ["recent-alarms"],
@@ -83,40 +85,53 @@ export default function HomeScreen() {
       </View>
 
       <View className="px-5 mt-6">
-        <Text className="text-gray-900 font-bold text-lg mb-3">Overview</Text>
-        <View className="flex-row gap-3">
-          <TouchableOpacity
-            onPress={() => router.push("/alarms")}
-            className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"
-          >
-            <Bell size={24} color="#E11D48" />
-            <Text className="text-2xl font-bold text-gray-900 mt-2">
-              {isLoading ? "-" : stats?.alarms}
-            </Text>
-            <Text className="text-gray-500 text-sm">Alarms</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push("/matches")}
-            className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"
-          >
-            <Heart size={24} color="#E11D48" fill="#E11D48" />
-            <Text className="text-2xl font-bold text-gray-900 mt-2">
-              {isLoading ? "-" : stats?.matches}
-            </Text>
-            <Text className="text-gray-500 text-sm">Matches</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push("/discover")}
-            className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"
-          >
-            <Users size={24} color="#E11D48" />
-            <Text className="text-2xl font-bold text-gray-900 mt-2">
-              {isLoading ? "-" : stats?.crushes}
-            </Text>
-            <Text className="text-gray-500 text-sm">Crushes</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+  <Text className="text-gray-900 font-bold text-lg mb-3">Overview</Text>
+
+  <View className="flex-row gap-3">
+    <TouchableOpacity
+      onPress={() => router.push("/alarms")}
+      className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"
+    >
+      <Bell size={24} color="#E11D48" />
+      <Text className="text-2xl font-bold text-gray-900 mt-2">
+        {isLoading ? "-" : stats?.alarms}
+      </Text>
+      <Text className="text-gray-500 text-sm">Alarms</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      onPress={() => router.push("/matches")}
+      className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"
+    >
+      <Heart size={24} color="#E11D48" fill="#E11D48" />
+      <Text className="text-2xl font-bold text-gray-900 mt-2">
+        {isLoading ? "-" : stats?.matches}
+      </Text>
+      <Text className="text-gray-500 text-sm">Matches</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+  onPress={() => router.push("/crushes")}
+  className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"
+>
+  <Users size={24} color="#E11D48" />
+  <Text className="text-2xl font-bold text-gray-900 mt-2">
+    {isLoading ? "-" : stats?.crushes}
+  </Text>
+  <Text className="text-gray-500 text-sm">Crushes</Text>
+</TouchableOpacity>
+  </View>
+
+  {/* Own row, clearly separated below the stats */}
+ <TouchableOpacity
+  onPress={() => router.push("/liked")}
+  className="flex-row items-center justify-between bg-white rounded-2xl px-4 py-3.5 mt-3 shadow-sm"
+>
+  <View className="flex-row items-center">
+    <Heart size={18} color="#E11D48" />
+    <Text className="text-gray-700 font-medium ml-2">People You Liked</Text>
+  </View>
+  <Text className="text-gray-900 font-bold">{isLoading ? "-" : stats?.liked}</Text>
+</TouchableOpacity>
+</View>
 
       <View className="px-5 mt-6 mb-8">
         <View className="flex-row justify-between items-center mb-3">

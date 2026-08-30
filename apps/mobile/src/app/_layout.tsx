@@ -29,6 +29,8 @@ export default function RootLayout() {
         <Stack.Screen name="chat/[id]" />
         <Stack.Screen name="users/[id]" />
         <Stack.Screen name="edit-profile" />
+        <Stack.Screen name="crushes" />
+<Stack.Screen name="liked" />
       </Stack>
       {!isAuthenticated && <Redirect href="/(auth)/login" />}
       <StatusBar style="auto" />

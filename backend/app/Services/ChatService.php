@@ -86,17 +86,22 @@ class ChatService
             broadcast(new MessageSent($message))->toOthers();
 
             // Create notification for other participants
-            $otherUsers = $conversation->users->reject(fn ($u) => $u->id === $user->id);
+            // Create notification for other participants
+            $otherUsers = $conversation->users->reject(fn($u) => $u->id === $user->id);
             foreach ($otherUsers as $recipient) {
-                $notification = app(NotificationService::class)->createInAppNotification(
-                    $recipient->id,
-                    'new_message',
-                    'New Message',
-                    'You have a new message.',
-                    ['conversation_id' => $conversation->id, 'message_id' => $message->id]
-                );
+                try {
+                    $notification = app(NotificationService::class)->createInAppNotification(
+                        $recipient->id,
+                        'new_message',
+                        'New Message',
+                        'You have a new message.',
+                        ['conversation_id' => $conversation->id, 'message_id' => $message->id]
+                    );
 
-                broadcast(new \App\Events\UserNotification($notification))->toOthers();
+                    broadcast(new \App\Events\UserNotification($notification))->toOthers();
+                } catch (\Throwable $e) {
+                    \Log::warning('Failed to send message notification: ' . $e->getMessage());
+                }
             }
 
             return $message;

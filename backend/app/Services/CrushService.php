@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Str;
 use App\Models\Conversation;
 use App\Models\Crush;
 use App\Models\MatchModel;
@@ -93,15 +94,15 @@ class CrushService
 
                 // Attach users to conversation
                 $conversation->users()->syncWithoutDetaching([
-                    $fromUser->id => ['last_read_at' => null],
-                    $toUserId => ['last_read_at' => null],
+                    $fromUser->id => ['id' => (string) Str::uuid(), 'last_read_at' => null],
+                    $toUserId => ['id' => (string) Str::uuid(), 'last_read_at' => null],
                 ]);
 
                 // Create notifications
                 Notification::create([
                     'user_id' => $fromUser->id,
                     'type' => 'match_created',
-                    'title' => 'It's a Match!',
+                    'title' => "It's a Match!",
                     'body' => 'You have a new match.',
                     'data' => ['match_id' => $match->id],
                 ]);
@@ -109,7 +110,7 @@ class CrushService
                 Notification::create([
                     'user_id' => $toUserId,
                     'type' => 'match_created',
-                    'title' => 'It's a Match!',
+                    'title' => "It's a Match!",
                     'body' => 'You have a new match.',
                     'data' => ['match_id' => $match->id],
                 ]);
@@ -131,7 +132,7 @@ class CrushService
 
         return [
             'success' => true,
-            'message' => $result['match'] ? 'It's a match!' : 'Crush created successfully.',
+            'message' => $result['match'] ? "It's a match!" : 'Crush created successfully.',
             'data' => [
                 'crush' => $result['crush'],
                 'match_created' => ! is_null($result['match']),

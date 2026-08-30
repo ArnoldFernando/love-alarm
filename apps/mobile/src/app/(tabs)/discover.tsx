@@ -5,6 +5,7 @@ import {
   View,
   Text,
   Image,
+  Alert,
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
@@ -15,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/services/api"
 import { router } from "expo-router"
 import { getAvatarSource } from "@/utils/avatar"
+import { LinearGradient } from "expo-linear-gradient"
 import {
   Heart,
   X,
@@ -79,15 +81,19 @@ export default function DiscoverScreen() {
   })
 
   const crushMutation = useMutation({
-    mutationFn: async (toUserId: string) => {
-      return api.post("/crushes", { to_user_id: toUserId })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["discover"] })
-      queryClient.invalidateQueries({ queryKey: ["crushes"] })
-      queryClient.invalidateQueries({ queryKey: ["matches"] })
-    },
-  })
+  mutationFn: async (toUserId: string) => {
+    return api.post("/crushes", { to_user_id: toUserId })
+  },
+ onSuccess: (res) => {
+  queryClient.invalidateQueries({ queryKey: ["discover"] })
+  queryClient.invalidateQueries({ queryKey: ["crushes"] })
+  queryClient.invalidateQueries({ queryKey: ["matches"] })
+  queryClient.invalidateQueries({ queryKey: ["home-stats"] })
+  if (res.data.data.match_created) {
+    Alert.alert("It's a match! 🎉", "You both liked each other.")
+  }
+},
+})
 
   const handleLike = () => {
     if (users && users[currentIndex]) {
@@ -196,18 +202,21 @@ export default function DiscoverScreen() {
                   className="w-full h-96"
                   resizeMode="cover"
                 />
-                <View className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-5">
-                  <Text className="text-white text-2xl font-bold">
-                    {currentUser.profile?.display_name || "Unknown"},
-                    <Text className="text-white/90"> {currentUser.profile?.age || "?"}</Text>
-                  </Text>
-                  <View className="flex-row items-center mt-1">
-                    <MapPin size={14} color="#FFFFFF" />
-                    <Text className="text-white/80 text-sm ml-1">
-                      {currentUser.profile?.school || "No school listed"}
-                    </Text>
-                  </View>
-                </View>
+               <LinearGradient
+  colors={["transparent", "rgba(0,0,0,0.85)"]}
+  style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 20 }}
+>
+  <Text className="text-white text-2xl font-bold">
+    {currentUser.profile?.display_name || "Unknown"},
+    <Text className="text-white/90"> {currentUser.profile?.age || "?"}</Text>
+  </Text>
+  <View className="flex-row items-center mt-1">
+    <MapPin size={14} color="#FFFFFF" />
+    <Text className="text-white/80 text-sm ml-1">
+      {currentUser.profile?.school || "No school listed"}
+    </Text>
+  </View>
+</LinearGradient>
               </View>
 
               <View className="p-5">

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native"
@@ -22,11 +23,14 @@ interface Message {
   sender_id: string
   content: string
   created_at: string
-  is_read: boolean
+  read_at: string | null
   sender?: {
     id: string
-    display_name: string
-    photo_url: string | null
+    profile?: {
+      display_name: string
+      username: string
+    }
+    photos?: { url: string }[]
   }
 }
 
@@ -46,24 +50,27 @@ export default function ChatScreen() {
   })
 
   const { data: messages, isLoading } = useQuery({
-    queryKey: ["messages", id],
-    queryFn: async () => {
-      const res = await api.get(`/conversations/${id}/messages`)
-      return res.data.data || []
-    },
-  })
+  queryKey: ["messages", id],
+  queryFn: async () => {
+    const res = await api.get(`/conversations/${id}/messages`)
+    return res.data.data?.data || []
+  },
+})
 
-  const sendMutation = useMutation({
-    mutationFn: async (content: string) => {
-      return api.post(`/conversations/${id}/messages`, { content })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", id] })
-      queryClient.invalidateQueries({ queryKey: ["conversations"] })
-      queryClient.invalidateQueries({ queryKey: ["matches"] })
-      setMessageText("")
-    },
-  })
+ const sendMutation = useMutation({
+  mutationFn: async (content: string) => {
+    return api.post(`/conversations/${id}/messages`, { content })
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["messages", id] })
+    queryClient.invalidateQueries({ queryKey: ["conversations"] })
+    queryClient.invalidateQueries({ queryKey: ["matches"] })
+    setMessageText("")
+  },
+  onError: (err: any) => {
+    Alert.alert("Failed to send", err.response?.data?.message || "Something went wrong")
+  },
+})
 
   const readMutation = useMutation({
     mutationFn: async () => {
@@ -87,7 +94,8 @@ export default function ChatScreen() {
   const otherUser = conversation?.users?.find((u: any) => u.id !== user?.id)
 
   const renderMessage = ({ item }: { item: Message }) => {
-    const isMine = item.sender_id === user?.id
+  const isMine = item.sender_id === user?.id
+  console.log("DEBUG:", { messageSender: item.sender_id, myId: user?.id, isMine })
 
     return (
       <View
@@ -126,7 +134,7 @@ export default function ChatScreen() {
           </Text>
           {isMine && (
             <View className="ml-1">
-              {item.is_read ? (
+              {item.read_at ? (
                 <CheckCheck size={14} color="#E11D48" />
               ) : (
                 <Check size={14} color="#9CA3AF" />

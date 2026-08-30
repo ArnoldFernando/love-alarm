@@ -9,12 +9,14 @@ import { MessageCircle, Heart } from "lucide-react-native"
 
 interface Match {
   id: string
-  user: {
+  matched_user: {
     id: string
-    display_name: string
-    username: string
-    age: number
-    photo_url: string | null
+    profile: {
+      display_name: string
+      username: string
+      age: number | null
+    }
+    photos: { url: string }[]
   }
   matched_at: string
   last_message: {
@@ -30,20 +32,20 @@ export default function MatchesScreen() {
   const [refreshing, setRefreshing] = useState(false)
 
   const { data: matches, isLoading } = useQuery({
-    queryKey: ["matches"],
-    queryFn: async () => {
-      const res = await api.get("/matches")
-      return res.data.data || []
-    },
-  })
+  queryKey: ["matches"],
+  queryFn: async () => {
+    const res = await api.get("/matches")
+    return res.data.data?.data || []
+  },
+})
 
   const { data: conversations } = useQuery({
-    queryKey: ["conversations"],
-    queryFn: async () => {
-      const res = await api.get("/conversations")
-      return res.data.data || []
-    },
-  })
+  queryKey: ["conversations"],
+  queryFn: async () => {
+    const res = await api.get("/conversations")
+    return res.data.data?.data || res.data.data || []
+  },
+})
 
   const onRefresh = async () => {
     setRefreshing(true)
@@ -94,23 +96,25 @@ export default function MatchesScreen() {
                 onPress={() => handleOpenChat(match)}
                 className="bg-white rounded-2xl p-4 mb-3 shadow-sm flex-row items-center"
               >
-                <Image
-                  source={{
-                    uri:
-                      match.user?.photo_url ||
-                      "https://via.placeholder.com/100/E5E7EB/9CA3AF?text=?",
-                  }}
-                  className="w-14 h-14 rounded-full"
-                />
+                {match.matched_user?.photos?.[0]?.url ? (
+  <Image
+    source={{ uri: match.matched_user.photos[0].url }}
+    className="w-14 h-14 rounded-full"
+  />
+) : (
+  <View className="w-14 h-14 rounded-full bg-rose-100 items-center justify-center">
+    <Text style={{ fontSize: 28 }}>🙂</Text>
+  </View>
+)}
                 <View className="flex-1 ml-3">
                   <View className="flex-row items-center justify-between">
                     <Text className="text-gray-900 font-bold text-base">
-                      {match.user?.display_name || "Unknown"}
-                      <Text className="text-gray-400 font-normal">
-                        {" "}
-                        {match.user?.age || ""}
-                      </Text>
-                    </Text>
+  {match.matched_user?.profile?.display_name || "Unknown"}
+  <Text className="text-gray-400 font-normal">
+    {" "}
+    {match.matched_user?.profile?.age || ""}
+  </Text>
+</Text>
                     <Text className="text-gray-400 text-xs">
                       {match.last_message
                         ? new Date(match.last_message.sent_at).toLocaleDateString()
@@ -124,7 +128,7 @@ export default function MatchesScreen() {
                           size={14}
                           color={
                             !match.last_message.is_read &&
-                            match.last_message.sender_id !== match.user.id
+                            match.last_message.sender_id !== match.matched_user.id
                               ? "#E11D48"
                               : "#9CA3AF"
                           }
@@ -132,7 +136,7 @@ export default function MatchesScreen() {
                         <Text
                           className={`text-sm ml-1 flex-1 ${
                             !match.last_message.is_read &&
-                            match.last_message.sender_id !== match.user.id
+                            match.last_message.sender_id !== match.matched_user.id
                               ? "text-gray-900 font-medium"
                               : "text-gray-500"
                           }`}
@@ -141,7 +145,7 @@ export default function MatchesScreen() {
                           {match.last_message.content}
                         </Text>
                         {!match.last_message.is_read &&
-                          match.last_message.sender_id !== match.user.id && (
+                          match.last_message.sender_id !== match.matched_user.id && (
                             <View className="w-2.5 h-2.5 rounded-full bg-rose-500 ml-2" />
                           )}
                       </>

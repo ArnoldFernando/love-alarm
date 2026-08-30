@@ -1,6 +1,6 @@
 "use client"
 
-import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native"
+import { View, Alert, Text, Image, ScrollView, TouchableOpacity } from "react-native"
 import { useLocalSearchParams, router } from "expo-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/services/api"
@@ -21,15 +21,19 @@ export default function UserProfileScreen() {
     },
   })
 
-  const crushMutation = useMutation({
-    mutationFn: async () => {
-      return api.post("/crushes", { to_user_id: id })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["crushes"] })
-      queryClient.invalidateQueries({ queryKey: ["matches"] })
-    },
-  })
+const crushMutation = useMutation({
+  mutationFn: async () => {
+    return api.post("/crushes", { to_user_id: id })
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["crushes"] })
+    queryClient.invalidateQueries({ queryKey: ["matches"] })
+    queryClient.invalidateQueries({ queryKey: ["home-stats"] })
+  },
+   onError: () => {
+    Alert.alert("Something went wrong", "Could not like this profile. Try again.")
+  },
+})
 
   const blockMutation = useMutation({
     mutationFn: async () => {

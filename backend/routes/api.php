@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function () {
         Route::get('crushes', [CrushController::class, 'index']);
         Route::post('crushes', [CrushController::class, 'store'])->middleware('throttle:crush');
         Route::delete('crushes/{id}', [CrushController::class, 'destroy']);
+        Route::get('crushes/received', [CrushController::class, 'received']);
 
         // Matches
         Route::get('matches', [MatchController::class, 'index']);

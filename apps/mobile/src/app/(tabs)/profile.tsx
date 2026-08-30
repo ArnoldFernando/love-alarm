@@ -59,7 +59,7 @@ export default function ProfileScreen() {
     },
   })
 
- const handleLogout = () => {
+const handleLogout = () => {
   Alert.alert(
     "Log out",
     "Are you sure you want to log out?",
@@ -72,12 +72,11 @@ export default function ProfileScreen() {
           try {
             await api.post("/auth/logout")
           } catch (error) {
-            // Server-side logout failed (e.g. token already expired) —
-            // proceed with local logout anyway so the user isn't stuck.
             console.log("Logout API call failed, clearing local session anyway")
           } finally {
-            logout()
-          }
+  logout()
+  queryClient.clear()
+}
         },
       },
     ]

@@ -28,19 +28,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   setAuth: (token, user) => {
-    SecureStore.setItemAsync("token", token)
-    queryClient.clear()
-    set({ token, user, isAuthenticated: true, isLoading: false })
-  },
+  SecureStore.setItemAsync("token", token)
+  SecureStore.setItemAsync("user", JSON.stringify(user))
+  set({ token, user, isAuthenticated: true, isLoading: false })
+},
 
   logout: () => {
-    SecureStore.deleteItemAsync("token")
-    queryClient.clear()
-    set({ token: null, user: null, isAuthenticated: false, isLoading: false })
-  },
+  SecureStore.deleteItemAsync("token")
+  SecureStore.deleteItemAsync("user")
+  set({ token: null, user: null, isAuthenticated: false, isLoading: false })
+},
 
   initialize: async () => {
-    const token = await SecureStore.getItemAsync("token")
-    set({ token, isAuthenticated: !!token, isLoading: false })
-  },
+  const token = await SecureStore.getItemAsync("token")
+  const userJson = await SecureStore.getItemAsync("user")
+  const user = userJson ? JSON.parse(userJson) : null
+  set({ token, user, isAuthenticated: !!token, isLoading: false })
+},
 }))
