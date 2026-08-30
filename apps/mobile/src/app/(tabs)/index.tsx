@@ -22,8 +22,8 @@ export default function HomeScreen() {
       api.get("/crushes/received"),
     ])
     return {
-      alarms: alarmsRes.status === "fulfilled" ? alarmsRes.value.data.data?.length || 0 : 0,
-      matches: matchesRes.status === "fulfilled" ? matchesRes.value.data.data?.length || 0 : 0,
+      alarms: alarmsRes.status === "fulfilled" ? alarmsRes.value.data.data?.data?.length || 0 : 0,
+      matches: matchesRes.status === "fulfilled" ? matchesRes.value.data.data?.data?.length || 0 : 0,
       liked: likedRes.status === "fulfilled" ? likedRes.value.data.data?.length || 0 : 0,
       crushes: crushesReceivedRes.status === "fulfilled" ? crushesReceivedRes.value.data.data?.length || 0 : 0,
     }

@@ -13,6 +13,7 @@ class AlarmController extends Controller
     public function index(Request $request): JsonResponse
     {
         $alarms = Alarm::where('user_id', $request->user()->id)
+            ->with('triggeredBy.profile', 'triggeredBy.photos')
             ->orderBy('triggered_at', 'desc')
             ->paginate(20);
 
@@ -31,6 +32,7 @@ class AlarmController extends Controller
     {
         $alarm = Alarm::where('id', $id)
             ->where('user_id', $request->user()->id)
+            ->with('triggeredBy.profile', 'triggeredBy.photos')
             ->firstOrFail();
 
         return $this->successResponse(new AlarmResource($alarm));

@@ -5,7 +5,8 @@ import { StatusBar } from "expo-status-bar"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { queryClient } from "@/lib/queryClient"
 import { useAuthStore } from "@/stores/auth"
-
+import { startBackgroundLocationTracking, stopBackgroundLocationTracking } from "@/services/locationTracking"
+import { api } from "@/services/api"
 
 
 export default function RootLayout() {
@@ -14,8 +15,18 @@ export default function RootLayout() {
   const isLoading = useAuthStore((state) => state.isLoading)
 
   useEffect(() => {
-    initialize()
-  }, [initialize])
+  initialize()
+}, [initialize])
+
+useEffect(() => {
+  if (isAuthenticated) {
+    api.get("/profile/settings").then((res) => {
+      if (res.data.data?.love_alarm_enabled && res.data.data?.background_detection_enabled) {
+        startBackgroundLocationTracking()
+      }
+    }).catch(() => {})
+  }
+}, [isAuthenticated])
 
   if (isLoading) {
     return null // or a splash/loading component

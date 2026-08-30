@@ -40,9 +40,17 @@
         }
       ],
       "expo-secure-store",
-      "expo-location",
       "expo-notifications",
-      "./plugins/withReactNativeNodeModulesDir.js"
+      "./plugins/withReactNativeNodeModulesDir.js",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Love Alarm to use your location to detect when your crushes are nearby, even when the app is closed.",
+          "locationAlwaysPermission": "Allow Love Alarm to use your location in the background to detect nearby crushes.",
+          "locationWhenInUsePermission": "Allow Love Alarm to use your location to detect nearby crushes.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "tsconfigPaths": true

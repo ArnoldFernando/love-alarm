@@ -13,6 +13,13 @@ class AlarmResource extends JsonResource
             'id' => $this->id,
             'type' => $this->type,
             'status' => $this->status,
+            'triggered_by_user' => $this->whenLoaded('triggeredBy', function () {
+                return [
+                    'id' => $this->triggeredBy->id,
+                    'display_name' => $this->triggeredBy->profile?->display_name,
+                    'username' => $this->triggeredBy->profile?->username,
+                ];
+            }),
             'triggered_at' => $this->triggered_at,
             'acknowledged_at' => $this->acknowledged_at,
             'expires_at' => $this->expires_at,

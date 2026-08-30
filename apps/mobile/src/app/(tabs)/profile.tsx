@@ -12,6 +12,7 @@ import {
 } from "react-native"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/services/api"
+import { startBackgroundLocationTracking, stopBackgroundLocationTracking } from "@/services/locationTracking"
 import { useAuthStore } from "@/stores/auth"
 import { router } from "expo-router"
 import {
@@ -27,6 +28,8 @@ import {
 } from "lucide-react-native"
 import { AvatarUpload } from "@/components/AvatarUpload"
 import { Edit3 } from "lucide-react-native"
+
+
 export default function ProfileScreen() {
   const queryClient = useQueryClient()
   const { logout } = useAuthStore()
@@ -73,7 +76,8 @@ const handleLogout = () => {
             await api.post("/auth/logout")
           } catch (error) {
             console.log("Logout API call failed, clearing local session anyway")
-          } finally {
+                    } finally {
+  await stopBackgroundLocationTracking()
   logout()
   queryClient.clear()
 }
@@ -86,9 +90,18 @@ const handleLogout = () => {
   const profile = profileData
   const user = profileData
 
-  const toggleSetting = (key: string, value: boolean) => {
-    updateSettingsMutation.mutate({ [key]: value })
+
+const toggleSetting = (key: string, value: boolean) => {
+  updateSettingsMutation.mutate({ [key]: value })
+
+  if (key === "love_alarm_enabled" || key === "background_detection_enabled") {
+    if (value) {
+      startBackgroundLocationTracking()
+    } else {
+      stopBackgroundLocationTracking()
+    }
   }
+}
 
   return (
     <ScrollView className="flex-1 bg-gray-50">

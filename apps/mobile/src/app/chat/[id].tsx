@@ -53,7 +53,12 @@ export default function ChatScreen() {
   queryKey: ["messages", id],
   queryFn: async () => {
     const res = await api.get(`/conversations/${id}/messages`)
-    return res.data.data?.data || []
+    const raw = res.data.data?.data || []
+    // Always render oldest → newest, regardless of what order the API returns
+    return [...raw].sort(
+      (a: Message, b: Message) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
   },
 })
 
