@@ -10,9 +10,7 @@ use Illuminate\Http\Request;
 
 class ProximityController extends Controller
 {
-    public function __construct(private ProximityService $proximityService)
-    {
-    }
+    public function __construct(private ProximityService $proximityService) {}
 
     public function update(ProximityRequest $request): JsonResponse
     {
@@ -40,5 +38,19 @@ class ProximityController extends Controller
         );
 
         return $this->successResponse($result);
+    }
+
+    public function radar(ProximityRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        $results = $this->proximityService->radarScan(
+            $request->user(),
+            (float) $data['latitude'],
+            (float) $data['longitude'],
+            30
+        );
+
+        return $this->successResponse(['users' => $results]);
     }
 }

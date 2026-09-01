@@ -12,6 +12,8 @@ class DiscoverUserResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'already_liked' => (bool) ($this->already_liked ?? false),
+            'crush_id' => $this->crush_id ?? null,
             'profile' => new PublicProfileResource($this->whenLoaded('profile')),
             'interests' => InterestResource::collection($this->whenLoaded('interests')),
             'photos' => ProfilePhotoResource::collection($this->photos),

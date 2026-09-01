@@ -65,6 +65,8 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:location');
         Route::post('proximity/check', [ProximityController::class, 'check'])
             ->middleware('throttle:location');
+        Route::post('proximity/radar', [ProximityController::class, 'radar'])
+            ->middleware('throttle:location');
 
         // Alarms
         Route::get('alarms', [AlarmController::class, 'index']);

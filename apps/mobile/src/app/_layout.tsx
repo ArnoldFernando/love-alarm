@@ -7,6 +7,7 @@ import { queryClient } from "@/lib/queryClient"
 import { useAuthStore } from "@/stores/auth"
 import { startBackgroundLocationTracking, stopBackgroundLocationTracking } from "@/services/locationTracking"
 import { api } from "@/services/api"
+import { GlobalAlarmSound } from "@/components/GlobalAlarmSound"
 
 
 export default function RootLayout() {
@@ -34,17 +35,19 @@ useEffect(() => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="chat/[id]" />
-        <Stack.Screen name="users/[id]" />
-        <Stack.Screen name="edit-profile" />
-        <Stack.Screen name="crushes" />
-<Stack.Screen name="liked" />
-      </Stack>
-      {!isAuthenticated && <Redirect href="/(auth)/login" />}
-      <StatusBar style="auto" />
-    </QueryClientProvider>
+  <GlobalAlarmSound />
+  <Stack screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="(auth)" />
+    <Stack.Screen name="(tabs)" />
+    <Stack.Screen name="chat/[id]" />
+    <Stack.Screen name="users/[id]" />
+    <Stack.Screen name="edit-profile" />
+    <Stack.Screen name="crushes" />
+    <Stack.Screen name="liked" />
+    
+  </Stack>
+  {!isAuthenticated && <Redirect href="/(auth)/login" />}
+  <StatusBar style="auto" />
+</QueryClientProvider>
   )
 }

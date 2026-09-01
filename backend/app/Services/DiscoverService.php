@@ -74,13 +74,17 @@ class DiscoverService
             });
         }
 
-        // Exclude already crushed users if requested
-        if (! empty($filters['exclude_crushed'])) {
-            $crushedIds = $user->crushesSent()->pluck('to_user_id')->all();
-            $query->whereNotIn('users.id', $crushedIds);
-        }
+        $crushesSentMap = $user->crushesSent()->pluck('id', 'to_user_id');
 
-        return $query->paginate($perPage);
+        $users = $query->paginate($perPage);
+
+        $users->getCollection()->transform(function ($u) use ($crushesSentMap) {
+            $u->already_liked = $crushesSentMap->has($u->id);
+            $u->crush_id = $crushesSentMap->get($u->id);
+            return $u;
+        });
+
+        return $users;
     }
 
     public function getUserProfile(User $viewer, string $userId): ?User

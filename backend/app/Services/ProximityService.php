@@ -193,7 +193,7 @@ class ProximityService
         $this->setCooldown($user->id, $targetId);
 
         // Dispatch notification job
-        dispatch(function () use ($user, $alarmType, $targetId) {
+        dispatch(function () use ($user, $alarm, $alarmType, $targetId) {
             $title = $alarmType === 'mutual_crush_nearby'
                 ? 'Mutual crush nearby!'
                 : 'Someone you like is nearby.';
@@ -280,5 +280,56 @@ class ProximityService
         }
 
         return $deleted;
+    }
+
+
+    public function radarScan(User $user, float $latitude, float $longitude, float $radius = 30): array
+    {
+        $blockedIds = $this->getBlockedUserIds($user);
+
+        $candidateKeys = Redis::keys(self::REDIS_PREFIX . '*');
+        $nearby = [];
+
+        $redisKeyPrefix = config('database.redis.options.prefix', '');
+
+        foreach ($candidateKeys as $key) {
+            $targetId = str_replace($redisKeyPrefix . self::REDIS_PREFIX, '', $key);
+
+            if ($targetId === $user->id || in_array($targetId, $blockedIds)) {
+                continue;
+            }
+
+            $data = Redis::get(self::REDIS_PREFIX . $targetId);
+            if (! $data) {
+                continue;
+            }
+
+            $location = json_decode($data, true);
+            $distance = $this->haversineDistance($latitude, $longitude, $location['lat'], $location['lng']);
+
+            if ($distance > $radius) {
+                continue;
+            }
+
+            $targetUser = User::with(['settings', 'profile'])->find($targetId);
+            if (! $targetUser || ! $targetUser->isActive()) {
+                continue;
+            }
+
+            $settings = $targetUser->settings;
+            if (! $settings || ! $settings->profile_visible || ! $settings->show_online_status) {
+                continue;
+            }
+
+            $nearby[] = [
+                'user_id' => $targetUser->id,
+                'display_name' => $targetUser->profile->display_name ?? 'Someone',
+                'distance_meters' => round($distance, 1),
+            ];
+        }
+
+        usort($nearby, fn($a, $b) => $a['distance_meters'] <=> $b['distance_meters']);
+
+        return $nearby;
     }
 }

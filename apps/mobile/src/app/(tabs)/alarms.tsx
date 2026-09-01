@@ -3,8 +3,10 @@
 import { useState } from "react"
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from "react-native"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useFocusEffect } from "@react-navigation/native"
 import { api } from "@/services/api"
 import { router } from "expo-router"
+// import { useAlarmSound } from "@/hooks/useAlarmSound"
 import { Bell, Heart, Clock, Check } from "lucide-react-native"
 
 interface Alarm {
@@ -24,17 +26,33 @@ export default function AlarmsScreen() {
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
 
-  const { data: alarms, isLoading } = useQuery({
-  queryKey: ["alarms"],
-  queryFn: async () => {
-    const res = await api.get("/alarms")
+  const { data: alarms = [], isLoading } = useQuery<Alarm[]>({
+    queryKey: ["alarms"],
+    queryFn: async (): Promise<Alarm[]> => {
+  const res = await api.get("/alarms")
 
-      console.log("ALARMS TYPE:", typeof res.data.data, "IS ARRAY:", Array.isArray(res.data.data))
-  console.log("ALARMS KEYS:", Object.keys(res.data.data || {}))
+  console.log("ALARMS RESPONSE:", JSON.stringify(res.data, null, 2))
 
-    return res.data.data?.data || []
-  },
-})
+  // Handle { data: [...] }
+  if (Array.isArray(res.data?.data)) {
+    return res.data.data
+  }
+
+  // Handle { data: { data: [...] } }
+  if (Array.isArray(res.data?.data?.data)) {
+    return res.data.data.data
+  }
+
+  // Handle direct [...]
+  if (Array.isArray(res.data)) {
+    return res.data
+  }
+
+  console.warn("Unexpected alarms response:", res.data)
+
+  return []
+},
+  })
 
   const acknowledgeMutation = useMutation({
     mutationFn: async (alarmId: string) => {
@@ -81,14 +99,18 @@ export default function AlarmsScreen() {
     }
   }
 
-  const activeAlarms = alarms?.filter((a: Alarm) =>
-    ["triggered", "detected"].includes(a.status)
-  ) || []
+ const activeAlarms = alarms?.filter((a: Alarm) =>
+  ["triggered", "detected"].includes(a.status)
+) || []
+
+
 
   const pastAlarms = alarms?.filter((a: Alarm) =>
     !["triggered", "detected"].includes(a.status)
   ) || []
 
+  // Play alarm sound when there are active alarms and screen is focused
+ 
   return (
     <View className="flex-1 bg-gray-50">
       <View className="bg-white px-5 pt-12 pb-4 border-b border-gray-100">
@@ -186,9 +208,15 @@ export default function AlarmsScreen() {
                   {new Date(alarm.triggered_at).toLocaleDateString()}
                 </Text>
               </TouchableOpacity>
+
+
+
             ))}
           </View>
         )}
+
+
+
 
         {alarms?.length === 0 && (
           <View className="items-center justify-center py-20 px-8">

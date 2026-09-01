@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router"
-import { Heart, Search, Bell, MessageCircle, User } from "lucide-react-native"
+import { Heart, Search, Bell, MessageCircle, User, Radar } from "lucide-react-native"
 
 export default function TabLayout() {
   return (
@@ -50,6 +50,16 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
+
+      <Tabs.Screen
+  name="radar"
+  options={{
+    title: "Radar",
+    tabBarIcon: ({ color, size }) => <Radar size={size} color={color} />,
+  }}
+/>
     </Tabs>
+
+    
   )
 }

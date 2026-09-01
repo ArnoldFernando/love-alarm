@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Dimensions,
   ScrollView,
   RefreshControl,
+  Animated,
 } from "react-native"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/services/api"
@@ -30,6 +31,8 @@ const { width } = Dimensions.get("window")
 
 interface UserProfile {
   id: string
+  already_liked?: boolean
+  crush_id?: string | null
   profile: {
     username: string
     display_name: string
@@ -42,10 +45,13 @@ interface UserProfile {
   photos: { id: string; url: string; is_primary: boolean }[]
 }
 
+
 export default function DiscoverScreen() {
   const queryClient = useQueryClient()
-  const [currentIndex, setCurrentIndex] = useState(0)
+    const [currentIndex, setCurrentIndex] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
+  const [showLikedOverlay, setShowLikedOverlay] = useState(false)
+  const heartScale = useRef(new Animated.Value(0)).current
   const [refreshing, setRefreshing] = useState(false)
 
   const onRefresh = async () => {
@@ -60,10 +66,10 @@ export default function DiscoverScreen() {
     school: "",
   })
 
-    const { data: users, isLoading, error } = useQuery({
+     const { data: users, isLoading, error } = useQuery({
     queryKey: ["discover", filters],
     queryFn: async () => {
-      const params: any = {}
+      const params: any = { per_page: 100 }
       if (filters.min_age) params.min_age = filters.min_age
       if (filters.max_age) params.max_age = filters.max_age
       if (filters.gender) params.gender = filters.gender
@@ -84,23 +90,71 @@ export default function DiscoverScreen() {
   mutationFn: async (toUserId: string) => {
     return api.post("/crushes", { to_user_id: toUserId })
   },
- onSuccess: (res) => {
-  queryClient.invalidateQueries({ queryKey: ["discover"] })
-  queryClient.invalidateQueries({ queryKey: ["crushes"] })
-  queryClient.invalidateQueries({ queryKey: ["matches"] })
-  queryClient.invalidateQueries({ queryKey: ["home-stats"] })
-  if (res.data.data.match_created) {
-    Alert.alert("It's a match! 🎉", "You both liked each other.")
-  }
-},
+  onSuccess: (res) => {
+    queryClient.invalidateQueries({ queryKey: ["discover"] })
+    queryClient.invalidateQueries({ queryKey: ["crushes"] })
+    queryClient.invalidateQueries({ queryKey: ["matches"] })
+    queryClient.invalidateQueries({ queryKey: ["home-stats"] })
+    if (res.data.data.match_created) {
+      Alert.alert("It's a match! 🎉", "You both liked each other.")
+    }
+  },
 })
 
-  const handleLike = () => {
-    if (users && users[currentIndex]) {
-      crushMutation.mutate(users[currentIndex].id)
-      setCurrentIndex((prev) => prev + 1)
-    }
+const unlikeMutation = useMutation({
+  mutationFn: async (crushId: string) => {
+    return api.delete(`/crushes/${crushId}`)
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["discover"] })
+    queryClient.invalidateQueries({ queryKey: ["crushes"] })
+    queryClient.invalidateQueries({ queryKey: ["home-stats"] })
+  },
+  onError: () => {
+    Alert.alert("Something went wrong", "Could not unlike. Try again.")
+  },
+})
+
+const handleUndoLike = () => {
+  if (lastLikedCrush) {
+    unlikeMutation.mutate(lastLikedCrush.crushId)
   }
+}
+
+  const handleToggleLike = () => {
+  if (!users || !users[currentIndex]) return
+  const current = users[currentIndex]
+
+  if (current.already_liked) {
+    if (current.crush_id) {
+      unlikeMutation.mutate(current.crush_id)
+    }
+    return
+  }
+
+  if (showLikedOverlay) return
+
+  crushMutation.mutate(current.id)
+  setShowLikedOverlay(true)
+  heartScale.setValue(0)
+
+  Animated.sequence([
+    Animated.spring(heartScale, {
+      toValue: 1,
+      friction: 4,
+      useNativeDriver: true,
+    }),
+    Animated.delay(350),
+    Animated.timing(heartScale, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }),
+  ]).start(() => {
+    setShowLikedOverlay(false)
+    setCurrentIndex((prev) => prev + 1)
+  })
+}
 
   const handleSkip = () => {
     setCurrentIndex((prev) => prev + 1)
@@ -202,7 +256,16 @@ export default function DiscoverScreen() {
                   className="w-full h-96"
                   resizeMode="cover"
                 />
-               <LinearGradient
+                {currentUser.already_liked && (
+                  <View
+                    style={{ position: "absolute", top: 12, right: 12 }}
+                    className="flex-row items-center bg-rose-500 px-3 py-1.5 rounded-full shadow-md"
+                  >
+                    <Heart size={14} color="#FFFFFF" fill="#FFFFFF" />
+                    <Text className="text-white text-xs font-semibold ml-1">Liked</Text>
+                  </View>
+                )}
+                             <LinearGradient
   colors={["transparent", "rgba(0,0,0,0.85)"]}
   style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 20 }}
 >
@@ -217,6 +280,27 @@ export default function DiscoverScreen() {
     </Text>
   </View>
 </LinearGradient>
+
+                {showLikedOverlay && (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "rgba(0,0,0,0.25)",
+                      opacity: heartScale,
+                    }}
+                  >
+                    <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                      <Heart size={110} color="#E11D48" fill="#E11D48" />
+                    </Animated.View>
+                  </Animated.View>
+                )}
               </View>
 
               <View className="p-5">
@@ -246,15 +330,22 @@ export default function DiscoverScreen() {
               >
                 <X size={28} color="#EF4444" />
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleLike}
-                disabled={crushMutation.isPending}
-                className="w-20 h-20 rounded-full bg-rose-500 items-center justify-center shadow-lg"
-                style={{ elevation: 5 }}
-              >
-                <Heart size={32} color="#FFFFFF" fill="#FFFFFF" />
-              </TouchableOpacity>
+                          <TouchableOpacity
+  onPress={handleToggleLike}
+  disabled={crushMutation.isPending || unlikeMutation.isPending || showLikedOverlay}
+  className={`w-20 h-20 rounded-full items-center justify-center shadow-lg ${
+    currentUser?.already_liked ? "bg-white border-2 border-rose-500" : "bg-rose-500"
+  }`}
+  style={{ elevation: 5 }}
+>
+  <Heart
+    size={32}
+    color={currentUser?.already_liked ? "#E11D48" : "#FFFFFF"}
+    fill={currentUser?.already_liked ? "#E11D48" : "#FFFFFF"}
+  />
+</TouchableOpacity>
             </View>
+            
           </View>
         ) : (
           <View className="items-center px-8">

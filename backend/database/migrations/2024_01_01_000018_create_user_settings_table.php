@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->unique()->constrained('users')->onDelete('cascade');
             $table->boolean('love_alarm_enabled')->default(true);
-            $table->integer('alarm_radius_meters')->default(10);
+            $table->integer('alarm_radius_meters')->default(30);
             $table->boolean('notify_crush_nearby')->default(true);
             $table->boolean('notify_mutual_crush_nearby')->default(true);
             $table->boolean('notify_new_match')->default(true);
