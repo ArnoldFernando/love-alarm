@@ -30,6 +30,7 @@ export function AvatarUpload({ currentUrl }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] })
+      setLocalPreview(null)
     },
     onError: () => {
       Alert.alert("Upload failed", "Could not upload photo. Please try again.")
@@ -58,8 +59,7 @@ export function AvatarUpload({ currentUrl }: Props) {
   }
 
 
-// ...inside the component, replace the displayUrl line:
-const source = localPreview ? { uri: localPreview } : getAvatarSource(currentUrl)
+  const source = localPreview ? { uri: localPreview } : getAvatarSource(currentUrl)
   return (
     <TouchableOpacity onPress={pickImage} disabled={uploadMutation.isPending} className="relative">
       <Image source={source} className="w-24 h-24 rounded-full" />
