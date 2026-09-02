@@ -1,15 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function ReportsPage() {
   const [statusFilter, setStatusFilter] = useState("")
   const [page, setPage] = useState(1)
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
 
   const { data: reportsRes, isLoading } = useQuery({
     queryKey: ["admin-reports", statusFilter, page],
@@ -19,6 +22,48 @@ export default function ReportsPage() {
       const res = await api.get("/admin/reports", { params })
       return res.data.data
     },
+  })
+
+  const assignMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/admin/reports/${id}/assign`)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-reports"] })
+      toast({ title: "Success", description: "Report assigned for review" })
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to assign report", variant: "destructive" })
+    }
+  })
+
+  const resolveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/admin/reports/${id}/resolve`)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-reports"] })
+      toast({ title: "Success", description: "Report resolved" })
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to resolve report", variant: "destructive" })
+    }
+  })
+
+  const dismissMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/admin/reports/${id}/dismiss`)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-reports"] })
+      toast({ title: "Success", description: "Report dismissed" })
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to dismiss report", variant: "destructive" })
+    }
   })
 
   const reports = reportsRes?.data ?? []
@@ -66,6 +111,10 @@ export default function ReportsPage() {
         <CardContent>
           {isLoading ? (
             <div className="py-8 text-center text-gray-500">Loading...</div>
+          ) : reports.length === 0 ? (
+            <div className="py-8 text-center text-gray-400">
+              No reports found for this filter.
+            </div>
           ) : (
             <>
               <div className="overflow-x-auto">
@@ -77,6 +126,7 @@ export default function ReportsPage() {
                       <th className="py-3 px-4 text-left font-medium text-gray-500">Reason</th>
                       <th className="py-3 px-4 text-left font-medium text-gray-500">Status</th>
                       <th className="py-3 px-4 text-left font-medium text-gray-500">Date</th>
+                      <th className="py-3 px-4 text-right font-medium text-gray-500">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -108,6 +158,36 @@ export default function ReportsPage() {
                         </td>
                         <td className="py-3 px-4 text-gray-500">
                           {new Date(report.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
+                          {report.status === "pending" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => assignMutation.mutate(report.id)}
+                            >
+                              Assign
+                            </Button>
+                          )}
+                          {report.status === "under_review" && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => resolveMutation.mutate(report.id)}
+                            >
+                              Resolve
+                            </Button>
+                          )}
+                          {(report.status === "pending" || report.status === "under_review") && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => dismissMutation.mutate(report.id)}
+                            >
+                              Dismiss
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}

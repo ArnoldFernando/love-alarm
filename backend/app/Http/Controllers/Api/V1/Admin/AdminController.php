@@ -115,4 +115,67 @@ class AdminController extends Controller
             ],
         ]);
     }
+
+    public function matches(Request $request): JsonResponse
+    {
+        $matches = $this->adminService->getMatches($request->only([
+            'search', 'per_page', 'page'
+        ]));
+
+        return $this->successResponse([
+            'data' => $matches->items(),
+            'pagination' => [
+                'current_page' => $matches->currentPage(),
+                'last_page' => $matches->lastPage(),
+                'per_page' => $matches->perPage(),
+                'total' => $matches->total(),
+                'from' => $matches->firstItem(),
+                'to' => $matches->lastItem(),
+            ],
+        ]);
+    }
+
+    public function alarms(Request $request): JsonResponse
+    {
+        $alarms = $this->adminService->getAlarms($request->only([
+            'search', 'per_page', 'page'
+        ]));
+
+        return $this->successResponse([
+            'data' => $alarms->items(),
+            'pagination' => [
+                'current_page' => $alarms->currentPage(),
+                'last_page' => $alarms->lastPage(),
+                'per_page' => $alarms->perPage(),
+                'total' => $alarms->total(),
+                'from' => $alarms->firstItem(),
+                'to' => $alarms->lastItem(),
+            ],
+        ]);
+    }
+
+    public function getSettings(): JsonResponse
+    {
+        $settings = $this->adminService->getSettings();
+        return $this->successResponse($settings);
+    }
+
+    public function updateSettings(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'alarm_radius_meters' => 'required|integer|min:50|max:10000',
+            'alarm_cooldown_seconds' => 'required|integer|min:60|max:86400',
+            'max_active_alarms_per_user' => 'required|integer|min:1|max:1000',
+            'proximity_check_interval_seconds' => 'required|integer|min:10|max:3600',
+            'max_distance_km' => 'required|integer|min:1|max:500',
+        ]);
+
+        $result = $this->adminService->updateSettings($validated);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], 422);
+        }
+
+        return $this->successResponse(message: 'Settings updated successfully');
+    }
 }

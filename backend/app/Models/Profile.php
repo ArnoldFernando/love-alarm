@@ -35,7 +35,7 @@ class Profile extends Model
 
     public function photos(): HasMany
     {
-        return $this->user->hasMany(ProfilePhoto::class);
+        return $this->hasMany(ProfilePhoto::class, 'user_id', 'user_id');
     }
 
     public function getAgeAttribute(): ?int

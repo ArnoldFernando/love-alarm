@@ -107,8 +107,12 @@ Route::post('proximity/clear', [ProximityController::class, 'clear']);
             Route::get('dashboard', [AdminController::class, 'dashboard']);
             Route::get('users', [AdminController::class, 'users']);
             Route::get('users/{id}', [AdminController::class, 'userDetail']);
+            Route::get('matches', [AdminController::class, 'matches']);
+            Route::get('alarms', [AdminController::class, 'alarms']);
             Route::get('analytics', [AdminController::class, 'analytics']);
             Route::get('audit-logs', [AdminController::class, 'auditLogs']);
+            Route::get('settings', [AdminController::class, 'getSettings']);
+            Route::put('settings', [AdminController::class, 'updateSettings']);
 
             // Moderator can review reports
             Route::get('reports', [AdminReportController::class, 'index']);

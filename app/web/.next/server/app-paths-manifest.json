@@ -1,0 +1,8 @@
+{
+  "/(admin)/matches/page": "app/(admin)/matches/page.js",
+  "/(admin)/dashboard/page": "app/(admin)/dashboard/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(admin)/settings/page": "app/(admin)/settings/page.js",
+  "/(admin)/users/page": "app/(admin)/users/page.js",
+  "/(admin)/analytics/page": "app/(admin)/analytics/page.js"
+}

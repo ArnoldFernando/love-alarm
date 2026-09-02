@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { StatCard } from "@/components/admin/StatCard"
 import {
   Users,
   UserCheck,
@@ -71,26 +72,16 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {cards.map((card) => {
-          const Icon = card.icon
-          return (
-            <Card key={card.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  {card.title}
-                </CardTitle>
-                <div className={`${card.bg} rounded-md p-2`}>
-                  <Icon className={`h-4 w-4 ${card.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
-                  {card.value}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {cards.map((card) => (
+          <StatCard
+            key={card.title}
+            title={card.title}
+            value={card.value}
+            icon={card.icon}
+            color={card.color}
+            bg={card.bg}
+          />
+        ))}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
