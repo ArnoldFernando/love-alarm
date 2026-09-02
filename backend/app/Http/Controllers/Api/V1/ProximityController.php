@@ -10,19 +10,14 @@ use Illuminate\Http\Request;
 
 class ProximityController extends Controller
 {
-
-public function clearLocation(User $user): void
-{
-    Redis::del(self::REDIS_PREFIX . $user->id);
-}
-
-public function clear(Request $request): JsonResponse
-{
-    $this->proximityService->clearLocation($request->user());
-
-    return $this->successResponse(message: 'Location cleared.');
-}
     public function __construct(private ProximityService $proximityService) {}
+
+    public function clear(Request $request): JsonResponse
+    {
+        $this->proximityService->clearLocation($request->user());
+
+        return $this->successResponse(message: 'Location cleared.');
+    }
 
     public function update(ProximityRequest $request): JsonResponse
     {

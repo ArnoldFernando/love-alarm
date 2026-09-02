@@ -46,6 +46,16 @@ class ProximityService
         ]);
     }
 
+    public function clearLocation(User $user): void
+    {
+        Redis::del(self::REDIS_PREFIX . $user->id);
+
+        ProximityEvent::where('user_id', $user->id)
+            ->where('event_type', 'update')
+            ->where('recorded_at', '>=', now()->subMinutes((int) config('app.location_retention_minutes', 30)))
+            ->delete();
+    }
+
     public function checkProximity(User $user, float $latitude, float $longitude, ?float $accuracy = null): array
     {
         $settings = $user->settings;

@@ -17,13 +17,31 @@ class ProximityTest extends TestCase
         Redis::flushAll();
     }
 
-    public function test_user_can_update_location(): void
+    private function createProximityUser(string $username, string $displayName): User
     {
         $user = User::factory()->create();
-        $user->profile()->create(['username' => 'user', 'display_name' => 'User']);
+        $user->profile()->create(['username' => $username, 'display_name' => $displayName]);
+        $user->settings()->create([
+            'love_alarm_enabled' => true,
+            'alarm_radius_meters' => 10,
+        ]);
+
+        return $user;
+    }
+
+    private function withAccessToken(string $token): static
+    {
+        $this->app['auth']->forgetGuards();
+
+        return $this->withHeader('Authorization', 'Bearer ' . $token);
+    }
+
+    public function test_user_can_update_location(): void
+    {
+        $user = $this->createProximityUser('user', 'User');
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withAccessToken($token)
             ->postJson('/api/v1/proximity/update', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
@@ -39,12 +57,78 @@ class ProximityTest extends TestCase
         ]);
     }
 
+    public function test_authenticated_user_can_clear_proximity_location(): void
+    {
+        $user = $this->createProximityUser('user', 'User');
+        $token = $user->createToken('test')->plainTextToken;
+
+        $this->withAccessToken($token)
+            ->postJson('/api/v1/proximity/update', [
+                'latitude' => 14.5995,
+                'longitude' => 120.9842,
+            ])
+            ->assertStatus(200);
+
+        $this->assertTrue((bool) Redis::exists('proximity:' . $user->id));
+        $this->assertDatabaseHas('proximity_events', [
+            'user_id' => $user->id,
+            'event_type' => 'update',
+        ]);
+
+        $response = $this->withAccessToken($token)
+            ->postJson('/api/v1/proximity/clear');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Location cleared.');
+
+        $this->assertFalse((bool) Redis::exists('proximity:' . $user->id));
+        $this->assertDatabaseMissing('proximity_events', [
+            'user_id' => $user->id,
+            'event_type' => 'update',
+        ]);
+    }
+
+    public function test_cleared_location_is_not_used_by_database_fallback(): void
+    {
+        $userA = $this->createProximityUser('usera', 'User A');
+        $userB = $this->createProximityUser('userb', 'User B');
+        Crush::create(['from_user_id' => $userA->id, 'to_user_id' => $userB->id]);
+
+        $tokenA = $userA->createToken('test')->plainTextToken;
+        $tokenB = $userB->createToken('test')->plainTextToken;
+
+        $this->withAccessToken($tokenB)
+            ->postJson('/api/v1/proximity/update', [
+                'latitude' => 14.5995,
+                'longitude' => 120.9842,
+            ])
+            ->assertStatus(200);
+
+        $this->withAccessToken($tokenB)
+            ->postJson('/api/v1/proximity/clear')
+            ->assertStatus(200);
+
+        $response = $this->withAccessToken($tokenA)
+            ->postJson('/api/v1/proximity/check', [
+                'latitude' => 14.5995,
+                'longitude' => 120.9842,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(0, 'data.alarms');
+    }
+
+    public function test_unauthenticated_user_cannot_clear_proximity_location(): void
+    {
+        $this->postJson('/api/v1/proximity/clear')
+            ->assertStatus(401);
+    }
+
     public function test_proximity_check_finds_nearby_crush(): void
     {
-        $userA = User::factory()->create();
-        $userB = User::factory()->create();
-        $userA->profile()->create(['username' => 'usera', 'display_name' => 'User A']);
-        $userB->profile()->create(['username' => 'userb', 'display_name' => 'User B']);
+        $userA = $this->createProximityUser('usera', 'User A');
+        $userB = $this->createProximityUser('userb', 'User B');
 
         // User A likes User B
         Crush::create(['from_user_id' => $userA->id, 'to_user_id' => $userB->id]);
@@ -53,13 +137,13 @@ class ProximityTest extends TestCase
         $tokenB = $userB->createToken('test')->plainTextToken;
 
         // Both users report same location (0m apart)
-        $this->withHeader('Authorization', 'Bearer ' . $tokenB)
+        $this->withAccessToken($tokenB)
             ->postJson('/api/v1/proximity/update', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
             ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $response = $this->withAccessToken($tokenA)
             ->postJson('/api/v1/proximity/check', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
@@ -79,10 +163,8 @@ class ProximityTest extends TestCase
 
     public function test_proximity_check_respects_radius(): void
     {
-        $userA = User::factory()->create();
-        $userB = User::factory()->create();
-        $userA->profile()->create(['username' => 'usera', 'display_name' => 'User A']);
-        $userB->profile()->create(['username' => 'userb', 'display_name' => 'User B']);
+        $userA = $this->createProximityUser('usera', 'User A');
+        $userB = $this->createProximityUser('userb', 'User B');
 
         Crush::create(['from_user_id' => $userA->id, 'to_user_id' => $userB->id]);
 
@@ -90,14 +172,14 @@ class ProximityTest extends TestCase
         $tokenB = $userB->createToken('test')->plainTextToken;
 
         // User B at a location ~50m away from User A
-        $this->withHeader('Authorization', 'Bearer ' . $tokenB)
+        $this->withAccessToken($tokenB)
             ->postJson('/api/v1/proximity/update', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
             ]);
 
         // Default radius is 10m, so this should NOT trigger
-        $response = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $response = $this->withAccessToken($tokenA)
             ->postJson('/api/v1/proximity/check', [
                 'latitude' => 14.59995,
                 'longitude' => 120.9842,
@@ -110,10 +192,8 @@ class ProximityTest extends TestCase
 
     public function test_alarm_cooldown_prevents_spam(): void
     {
-        $userA = User::factory()->create();
-        $userB = User::factory()->create();
-        $userA->profile()->create(['username' => 'usera', 'display_name' => 'User A']);
-        $userB->profile()->create(['username' => 'userb', 'display_name' => 'User B']);
+        $userA = $this->createProximityUser('usera', 'User A');
+        $userB = $this->createProximityUser('userb', 'User B');
 
         Crush::create(['from_user_id' => $userA->id, 'to_user_id' => $userB->id]);
 
@@ -121,14 +201,14 @@ class ProximityTest extends TestCase
         $tokenB = $userB->createToken('test')->plainTextToken;
 
         // Both at same location
-        $this->withHeader('Authorization', 'Bearer ' . $tokenB)
+        $this->withAccessToken($tokenB)
             ->postJson('/api/v1/proximity/update', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
             ]);
 
         // First check triggers alarm
-        $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $this->withAccessToken($tokenA)
             ->postJson('/api/v1/proximity/check', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
@@ -136,7 +216,7 @@ class ProximityTest extends TestCase
             ->assertJsonCount(1, 'data.alarms');
 
         // Second check immediately after should not trigger (cooldown)
-        $response = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $response = $this->withAccessToken($tokenA)
             ->postJson('/api/v1/proximity/check', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
@@ -148,10 +228,8 @@ class ProximityTest extends TestCase
 
     public function test_mutual_crush_triggers_mutual_alarm(): void
     {
-        $userA = User::factory()->create();
-        $userB = User::factory()->create();
-        $userA->profile()->create(['username' => 'usera', 'display_name' => 'User A']);
-        $userB->profile()->create(['username' => 'userb', 'display_name' => 'User B']);
+        $userA = $this->createProximityUser('usera', 'User A');
+        $userB = $this->createProximityUser('userb', 'User B');
 
         // Mutual crush
         Crush::create(['from_user_id' => $userA->id, 'to_user_id' => $userB->id]);
@@ -160,13 +238,13 @@ class ProximityTest extends TestCase
         $tokenA = $userA->createToken('test')->plainTextToken;
         $tokenB = $userB->createToken('test')->plainTextToken;
 
-        $this->withHeader('Authorization', 'Bearer ' . $tokenB)
+        $this->withAccessToken($tokenB)
             ->postJson('/api/v1/proximity/update', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
             ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $response = $this->withAccessToken($tokenA)
             ->postJson('/api/v1/proximity/check', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
@@ -178,10 +256,8 @@ class ProximityTest extends TestCase
 
     public function test_blocked_users_do_not_trigger_alarms(): void
     {
-        $userA = User::factory()->create();
-        $userB = User::factory()->create();
-        $userA->profile()->create(['username' => 'usera', 'display_name' => 'User A']);
-        $userB->profile()->create(['username' => 'userb', 'display_name' => 'User B']);
+        $userA = $this->createProximityUser('usera', 'User A');
+        $userB = $this->createProximityUser('userb', 'User B');
 
         Crush::create(['from_user_id' => $userA->id, 'to_user_id' => $userB->id]);
 
@@ -194,13 +270,13 @@ class ProximityTest extends TestCase
         $tokenA = $userA->createToken('test')->plainTextToken;
         $tokenB = $userB->createToken('test')->plainTextToken;
 
-        $this->withHeader('Authorization', 'Bearer ' . $tokenB)
+        $this->withAccessToken($tokenB)
             ->postJson('/api/v1/proximity/update', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
             ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $tokenA)
+        $response = $this->withAccessToken($tokenA)
             ->postJson('/api/v1/proximity/check', [
                 'latitude' => 14.5995,
                 'longitude' => 120.9842,
@@ -225,7 +301,7 @@ class ProximityTest extends TestCase
             'expires_at' => now()->addDay(),
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withAccessToken($token)
             ->getJson('/api/v1/alarms');
 
         $response->assertStatus(200)
@@ -248,7 +324,7 @@ class ProximityTest extends TestCase
             'expires_at' => now()->addDay(),
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withAccessToken($token)
             ->postJson('/api/v1/alarms/' . $alarm->id . '/acknowledge');
 
         $response->assertStatus(200)
