@@ -131,7 +131,7 @@ class ProximityService
             ->select(
                 'user_id',
                 'accuracy',
-                DB::raw("ST_DistanceSphere(location, ST_SetSRID(ST_MakePoint({$lng}, {$lat}), 4326)) as distance")
+                DB::raw("ST_Distance(location, ST_SetSRID(ST_MakePoint({$lng}, {$lat}), 4326)::geography) as distance")
             )
             ->orderBy('recorded_at', 'desc')
             ->get()

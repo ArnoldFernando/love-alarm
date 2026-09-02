@@ -176,12 +176,14 @@ const crushMutation = useMutation({
         <View className="mx-5 mt-4 mb-8 bg-white rounded-2xl p-5 shadow-sm">
           <Text className="text-gray-900 font-bold text-base mb-3">Report User</Text>
           {[
-            "inappropriate_behavior",
-            "harassment",
-            "fake_profile",
-            "spam",
-            "other",
-          ].map((reason) => (
+  "spam",
+  "harassment",
+  "fake_account",
+  "impersonation",
+  "inappropriate_behavior",
+  "inappropriate_profile",
+  "other",
+].map((reason) => (
             <TouchableOpacity
               key={reason}
               onPress={() => setReportReason(reason)}

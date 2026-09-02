@@ -67,7 +67,7 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:location');
         Route::post('proximity/radar', [ProximityController::class, 'radar'])
             ->middleware('throttle:location');
-
+Route::post('proximity/clear', [ProximityController::class, 'clear']);
         // Alarms
         Route::get('alarms', [AlarmController::class, 'index']);
         Route::get('alarms/{id}', [AlarmController::class, 'show']);

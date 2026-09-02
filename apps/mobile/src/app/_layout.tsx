@@ -5,8 +5,14 @@ import { StatusBar } from "expo-status-bar"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { queryClient } from "@/lib/queryClient"
 import { useAuthStore } from "@/stores/auth"
-import { startBackgroundLocationTracking, stopBackgroundLocationTracking } from "@/services/locationTracking"
+import {
+  startBackgroundLocationTracking,
+  stopBackgroundLocationTracking,
+  startForegroundLocationTracking,
+  stopForegroundLocationTracking,
+} from "@/services/locationTracking"
 import { api } from "@/services/api"
+import { AppState } from "react-native"
 import { GlobalAlarmSound } from "@/components/GlobalAlarmSound"
 
 
@@ -20,12 +26,33 @@ export default function RootLayout() {
 }, [initialize])
 
 useEffect(() => {
-  if (isAuthenticated) {
-    api.get("/profile/settings").then((res) => {
-      if (res.data.data?.love_alarm_enabled && res.data.data?.background_detection_enabled) {
-        startBackgroundLocationTracking()
-      }
-    }).catch(() => {})
+  if (!isAuthenticated) return
+
+  let loveAlarmEnabled = false
+
+  api.get("/profile/settings").then((res) => {
+    loveAlarmEnabled = !!res.data.data?.love_alarm_enabled
+    if (loveAlarmEnabled && res.data.data?.background_detection_enabled) {
+      startBackgroundLocationTracking()
+    }
+    // App just launched — if it's already in the foreground, start fast tracking too
+    if (loveAlarmEnabled && AppState.currentState === "active") {
+      startForegroundLocationTracking()
+    }
+  }).catch(() => {})
+
+  const subscription = AppState.addEventListener("change", (nextState) => {
+    if (!loveAlarmEnabled) return
+    if (nextState === "active") {
+      startForegroundLocationTracking()
+    } else {
+      stopForegroundLocationTracking()
+    }
+  })
+
+  return () => {
+    subscription.remove()
+    stopForegroundLocationTracking()
   }
 }, [isAuthenticated])
 
@@ -44,6 +71,8 @@ useEffect(() => {
     <Stack.Screen name="edit-profile" />
     <Stack.Screen name="crushes" />
     <Stack.Screen name="liked" />
+    <Stack.Screen name="notifications" />
+<Stack.Screen name="blocked-users" />
     
   </Stack>
   {!isAuthenticated && <Redirect href="/(auth)/login" />}

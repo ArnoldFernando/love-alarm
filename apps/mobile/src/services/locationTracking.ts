@@ -73,3 +73,43 @@ export async function stopBackgroundLocationTracking() {
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME)
   }
 }
+
+
+let foregroundSubscription: Location.LocationSubscription | null = null
+
+export async function startForegroundLocationTracking() {
+  const { status } = await Location.requestForegroundPermissionsAsync()
+  if (status !== "granted") return false
+
+  if (foregroundSubscription) return true // already running
+
+  foregroundSubscription = await Location.watchPositionAsync(
+    {
+      accuracy: Location.Accuracy.High,
+      timeInterval: 3000,     // check every 3 seconds
+      distanceInterval: 5,    // or every 5 meters moved
+    },
+    async (location) => {
+      const coords = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        accuracy: location.coords.accuracy,
+      }
+      try {
+        await api.post("/proximity/update", coords)
+        await api.post("/proximity/check", coords)
+      } catch (err) {
+        console.log("Failed to send foreground proximity data:", err)
+      }
+    }
+  )
+
+  return true
+}
+
+export function stopForegroundLocationTracking() {
+  if (foregroundSubscription) {
+    foregroundSubscription.remove()
+    foregroundSubscription = null
+  }
+}

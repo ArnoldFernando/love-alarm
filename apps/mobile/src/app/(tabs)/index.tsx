@@ -30,6 +30,15 @@ export default function HomeScreen() {
   },
 })
 
+const { data: unreadCount = 0 } = useQuery({
+  queryKey: ["notifications-unread-count"],
+  queryFn: async () => {
+    const res = await api.get("/notifications/unread-count")
+    return res.data.data?.unread_count || 0
+  },
+  refetchInterval: 15000,
+})
+
   const { data: recentAlarms } = useQuery({
     queryKey: ["recent-alarms"],
     queryFn: async () => {
@@ -47,14 +56,28 @@ export default function HomeScreen() {
 
   return (
     <ScrollView className="flex-1 bg-gray-50">
-      <View className="bg-rose-500 px-5 pt-14 pb-8 rounded-b-3xl">
-        <Text className="text-white text-2xl font-bold">
-          Hello, {user?.profile?.display_name || "there"}!
-        </Text>
-        <Text className="text-rose-100 mt-1">
-          Your Love Alarm is {ringActive ? "ringing!" : "active"}
-        </Text>
-      </View>
+     <View className="bg-rose-500 px-5 pt-14 pb-8 rounded-b-3xl">
+  <View className="flex-row justify-between items-start">
+    <View>
+      <Text className="text-white text-2xl font-bold">
+        Hello, {user?.profile?.display_name || "there"}!
+      </Text>
+      <Text className="text-rose-100 mt-1">
+        Your Love Alarm is {ringActive ? "ringing!" : "active"}
+      </Text>
+    </View>
+    <TouchableOpacity onPress={() => router.push("/notifications")} className="relative mt-1">
+      <Bell size={24} color="#FFFFFF" />
+      {unreadCount > 0 && (
+        <View className="absolute -top-1 -right-1 bg-white rounded-full w-4 h-4 items-center justify-center">
+          <Text className="text-rose-600 text-[10px] font-bold">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  </View>
+</View>
 
       <View className="items-center -mt-10">
         <View
@@ -88,6 +111,9 @@ export default function HomeScreen() {
   <Text className="text-gray-900 font-bold text-lg mb-3">Overview</Text>
 
   <View className="flex-row gap-3">
+
+
+
     <TouchableOpacity
       onPress={() => router.push("/alarms")}
       className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"

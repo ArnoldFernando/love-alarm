@@ -25,6 +25,7 @@ import {
   GraduationCap,
   Mail,
   Settings,
+  UserX,
 } from "lucide-react-native"
 import { AvatarUpload } from "@/components/AvatarUpload"
 import { Edit3 } from "lucide-react-native"
@@ -73,20 +74,24 @@ const handleLogout = () => {
         style: "destructive",
         onPress: async () => {
           try {
+            await api.post("/proximity/clear")
+          } catch (error) {
+            console.log("Failed to clear proximity location")
+          }
+          try {
             await api.post("/auth/logout")
           } catch (error) {
             console.log("Logout API call failed, clearing local session anyway")
-                    } finally {
-  await stopBackgroundLocationTracking()
-  logout()
-  queryClient.clear()
-}
+          } finally {
+            await stopBackgroundLocationTracking()
+            logout()
+            queryClient.clear()
+          }
         },
       },
     ]
   )
 }
-
   const profile = profileData
   const user = profileData
 
@@ -238,6 +243,15 @@ const toggleSetting = (key: string, value: boolean) => {
           </View>
         </View>
       )}
+
+      <TouchableOpacity
+  onPress={() => router.push("/blocked-users")}
+  className="mx-5 mt-4 bg-white rounded-2xl overflow-hidden shadow-sm flex-row items-center px-5 py-4"
+>
+  <UserX size={18} color="#6B7280" />
+  <Text className="text-gray-700 ml-3 font-medium flex-1">Blocked Users</Text>
+  <ChevronRight size={18} color="#9CA3AF" />
+</TouchableOpacity>
 
       <View className="mx-5 mt-4 mb-8 bg-white rounded-2xl overflow-hidden shadow-sm">
         <TouchableOpacity

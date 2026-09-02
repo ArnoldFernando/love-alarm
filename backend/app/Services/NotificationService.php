@@ -14,9 +14,7 @@ use Kreait\Firebase\Messaging\CloudMessage;
 
 class NotificationService
 {
-    public function __construct(private ?Messaging $messaging = null)
-    {
-    }
+    private ?Messaging $messaging = null;
 
     public function createInAppNotification(
         string $userId,
@@ -74,8 +72,10 @@ class NotificationService
                 ]);
 
                 // Remove invalid tokens
-                if (str_contains($e->getMessage(), 'registration-token-not-registered') ||
-                    str_contains($e->getMessage(), 'invalid-registration-token')) {
+                if (
+                    str_contains($e->getMessage(), 'registration-token-not-registered') ||
+                    str_contains($e->getMessage(), 'invalid-registration-token')
+                ) {
                     $device->delete();
                 }
             }

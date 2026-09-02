@@ -23,7 +23,8 @@ class AuthService
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
                 'role' => 'user',
-                'account_status' => 'pending_verification',
+                'account_status' => 'active',
+                'email_verified_at' => now(),
             ]);
 
             Profile::create([
@@ -34,11 +35,16 @@ class AuthService
 
             UserSetting::create([
                 'user_id' => $user->id,
+                'love_alarm_enabled' => true,
+                'alarm_radius_meters' => 30,
+                'notify_crush_nearby' => true,
+                'notify_mutual_crush_nearby' => true,
+                'notify_new_match' => true,
+                'notify_messages' => true,
+                'background_detection_enabled' => true,
+                'profile_visible' => true,
+                'show_online_status' => true,
             ]);
-
-            $user->notify(new VerifyEmailNotification());
-
-            event(new Registered($user));
 
             return $user;
         });
