@@ -77,10 +77,10 @@ export default function DiscoverScreen() {
 
       try {
         const res = await api.get("/discover", { params })
-        console.log("DISCOVER RESPONSE:", JSON.stringify(res.data))
+        console.log("Discover request completed", res.status)
         return res.data.data?.data || []
       } catch (err: any) {
-        console.log("DISCOVER ERROR:", JSON.stringify(err.response?.data || err.message))
+        console.log("Discover request failed", err.response?.status)
         throw err
       }
     },

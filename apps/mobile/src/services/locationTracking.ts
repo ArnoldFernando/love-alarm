@@ -6,7 +6,7 @@ export const LOCATION_TASK_NAME = "love-alarm-background-location"
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
-    console.log("Background location task error:", error)
+    console.log("Background location task failed")
     return
   }
   if (data) {
@@ -26,7 +26,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
       await api.post("/proximity/update", coords)
       await api.post("/proximity/check", coords)
     } catch (err) {
-      console.log("Failed to send proximity data:", err)
+      console.log("Failed to send proximity data")
     }
   }
 })
@@ -99,7 +99,7 @@ export async function startForegroundLocationTracking() {
         await api.post("/proximity/update", coords)
         await api.post("/proximity/check", coords)
       } catch (err) {
-        console.log("Failed to send foreground proximity data:", err)
+        console.log("Failed to send foreground proximity data")
       }
     }
   )

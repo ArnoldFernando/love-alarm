@@ -40,7 +40,7 @@ export default function ProfileScreen() {
     queryKey: ["profile"],
     queryFn: async () => {
       const res = await api.get("/profile")
-          console.log("PROFILE RESPONSE:", JSON.stringify(res.data))
+          console.log("Profile request completed", res.status)
     
       return res.data.data
     },

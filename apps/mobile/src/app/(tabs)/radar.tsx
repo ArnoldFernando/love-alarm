@@ -40,7 +40,7 @@ const [location, setLocation] = useState<{ latitude: number; longitude: number }
           distanceInterval: 5,
         },
                 (loc) => {
-          console.log("RADAR LIVE LOCATION:", loc.coords.latitude, loc.coords.longitude, new Date().toLocaleTimeString())
+          console.log("Radar location updated")
           setLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude })
         }
       )

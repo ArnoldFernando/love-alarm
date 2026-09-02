@@ -24,7 +24,7 @@ export default function LoginScreen() {
     setLoading(true)
     try {
       const res = await api.post("/auth/login", data)
-      console.log("LOGIN RESPONSE:", JSON.stringify(res.data))
+      console.log("Login request completed", res.status)
       if (res.data.success) {
   await setAuth(res.data.data.token, res.data.data.user)
   router.replace("/(tabs)")
