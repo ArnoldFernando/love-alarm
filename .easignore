@@ -1,0 +1,4 @@
+backend/
+app/web/.next/
+node_modules/
+.git/
