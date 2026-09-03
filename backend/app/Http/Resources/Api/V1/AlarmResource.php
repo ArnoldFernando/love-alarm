@@ -18,6 +18,9 @@ class AlarmResource extends JsonResource
                     'id' => $this->triggeredBy->id,
                     'display_name' => $this->triggeredBy->profile?->display_name,
                     'username' => $this->triggeredBy->profile?->username,
+                    'photo_url' => $this->triggeredBy->photos
+                        ->firstWhere('is_primary', true)
+                        ?->url ?? $this->triggeredBy->photos->first()?->url,
                 ];
             }),
             'triggered_at' => $this->triggered_at,

@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image } from "react-native"
+import { getAvatarSource } from "@/utils/avatar"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useFocusEffect } from "@react-navigation/native"
 import { api } from "@/services/api"
 import { router } from "expo-router"
-// import { useAlarmSound } from "@/hooks/useAlarmSound"
+
 import { Bell, Heart, Clock, Check } from "lucide-react-native"
 
 interface Alarm {
@@ -17,6 +18,7 @@ interface Alarm {
     id: string
     display_name: string
     username: string
+    photo_url?: string | null   // add this
   } | null
   triggered_at: string
   acknowledged_at: string | null
@@ -192,9 +194,10 @@ export default function AlarmsScreen() {
                 onPress={() => router.push(`/alarms/${alarm.id}`)}
                 className="bg-white rounded-2xl p-4 mb-2 shadow-sm flex-row items-center"
               >
-                <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-3">
-                  <Bell size={18} color="#6B7280" />
-                </View>
+                <Image
+  source={getAvatarSource(alarm.triggered_by_user?.photo_url)}
+  className="w-10 h-10 rounded-full mr-3"
+/>
                 <View className="flex-1">
                   <Text className="text-gray-900 font-medium">
                     {alarm.type === "mutual_crush" ? "Mutual Crush" : "Crush"} -{" "}

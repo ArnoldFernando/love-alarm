@@ -103,6 +103,10 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity onPress={() => presentLocalNotification("Test", "Hello from the tray")}>
+  <Text>Test notification</Text>
+</TouchableOpacity>
+
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#E11D48" />

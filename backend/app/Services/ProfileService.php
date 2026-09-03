@@ -49,7 +49,7 @@ class ProfileService
         $disk = Storage::disk('public');
         $disk->put($path, file_get_contents($file->getRealPath()), 'public');
 
-        $url = $disk->url($path);
+        $url = '/storage/' . $path; // relative path — no host baked in
 
         if ($isPrimary) {
             $user->photos()->update(['is_primary' => false]);

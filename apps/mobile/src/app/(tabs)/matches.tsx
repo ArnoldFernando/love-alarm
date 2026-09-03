@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/services/api"
 import { router } from "expo-router"
 import { MessageCircle, Heart } from "lucide-react-native"
+import { getAvatarSource } from "@/utils/avatar"
 
 interface Match {
   id: string
@@ -97,10 +98,11 @@ export default function MatchesScreen() {
                 className="bg-white rounded-2xl p-4 mb-3 shadow-sm flex-row items-center"
               >
                 {match.matched_user?.photos?.[0]?.url ? (
-  <Image
-    source={{ uri: match.matched_user.photos[0].url }}
-    className="w-14 h-14 rounded-full"
-  />
+  // After:
+<Image
+  source={getAvatarSource(match.matched_user?.photos?.[0]?.url)}
+  className="w-14 h-14 rounded-full"
+/>
 ) : (
   <View className="w-14 h-14 rounded-full bg-rose-100 items-center justify-center">
     <Text style={{ fontSize: 28 }}>🙂</Text>

@@ -28,10 +28,10 @@ export function AvatarUpload({ currentUrl }: Props) {
         headers: { "Content-Type": "multipart/form-data" },
       })
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] })
-      setLocalPreview(null)
-    },
+    onSuccess: async () => {
+  await queryClient.invalidateQueries({ queryKey: ["profile"] })
+  setLocalPreview(null)
+},
     onError: () => {
       Alert.alert("Upload failed", "Could not upload photo. Please try again.")
       setLocalPreview(null)
@@ -62,7 +62,8 @@ export function AvatarUpload({ currentUrl }: Props) {
   const source = localPreview ? { uri: localPreview } : getAvatarSource(currentUrl)
   return (
     <TouchableOpacity onPress={pickImage} disabled={uploadMutation.isPending} className="relative">
-      <Image source={source} className="w-24 h-24 rounded-full" />
+      <Image source={source} className="w-24 h-24 rounded-full"
+       onError={(e) => console.log("Avatar image failed to load:", e.nativeEvent.error, source)} />
       <View className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-rose-500 items-center justify-center border-2 border-white">
         {uploadMutation.isPending ? (
           <ActivityIndicator size="small" color="#FFFFFF" />

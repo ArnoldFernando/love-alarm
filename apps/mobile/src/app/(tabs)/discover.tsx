@@ -25,6 +25,7 @@ import {
   GraduationCap,
   ChevronDown,
   SlidersHorizontal,
+  Sparkles,
 } from "lucide-react-native"
 
 const { width } = Dimensions.get("window")
@@ -45,10 +46,9 @@ interface UserProfile {
   photos: { id: string; url: string; is_primary: boolean }[]
 }
 
-
 export default function DiscoverScreen() {
   const queryClient = useQueryClient()
-    const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
   const [showLikedOverlay, setShowLikedOverlay] = useState(false)
   const heartScale = useRef(new Animated.Value(0)).current
@@ -66,7 +66,7 @@ export default function DiscoverScreen() {
     school: "",
   })
 
-     const { data: users, isLoading, error } = useQuery({
+  const { data: users, isLoading, error } = useQuery({
     queryKey: ["discover", filters],
     queryFn: async () => {
       const params: any = { per_page: 100 }
@@ -87,68 +87,68 @@ export default function DiscoverScreen() {
   })
 
   const crushMutation = useMutation({
-  mutationFn: async (toUserId: string) => {
-    return api.post("/crushes", { to_user_id: toUserId })
-  },
-  onSuccess: (res) => {
-    queryClient.invalidateQueries({ queryKey: ["discover"] })
-    queryClient.invalidateQueries({ queryKey: ["crushes"] })
-    queryClient.invalidateQueries({ queryKey: ["matches"] })
-    queryClient.invalidateQueries({ queryKey: ["home-stats"] })
-    if (res.data.data.match_created) {
-      Alert.alert("It's a match! 🎉", "You both liked each other.")
-    }
-  },
-})
+    mutationFn: async (toUserId: string) => {
+      return api.post("/crushes", { to_user_id: toUserId })
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["discover"] })
+      queryClient.invalidateQueries({ queryKey: ["crushes"] })
+      queryClient.invalidateQueries({ queryKey: ["matches"] })
+      queryClient.invalidateQueries({ queryKey: ["home-stats"] })
+      if (res.data.data.match_created) {
+        Alert.alert("It's a match! 🎉", "You both liked each other.")
+      }
+    },
+  })
 
-const unlikeMutation = useMutation({
-  mutationFn: async (crushId: string) => {
-    return api.delete(`/crushes/${crushId}`)
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["discover"] })
-    queryClient.invalidateQueries({ queryKey: ["crushes"] })
-    queryClient.invalidateQueries({ queryKey: ["home-stats"] })
-  },
-  onError: () => {
-    Alert.alert("Something went wrong", "Could not unlike. Try again.")
-  },
-})
+  const unlikeMutation = useMutation({
+    mutationFn: async (crushId: string) => {
+      return api.delete(`/crushes/${crushId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discover"] })
+      queryClient.invalidateQueries({ queryKey: ["crushes"] })
+      queryClient.invalidateQueries({ queryKey: ["home-stats"] })
+    },
+    onError: () => {
+      Alert.alert("Something went wrong", "Could not unlike. Try again.")
+    },
+  })
 
   const handleToggleLike = () => {
-  if (!users || !users[currentIndex]) return
-  const current = users[currentIndex]
+    if (!users || !users[currentIndex]) return
+    const current = users[currentIndex]
 
-  if (current.already_liked) {
-    if (current.crush_id) {
-      unlikeMutation.mutate(current.crush_id)
+    if (current.already_liked) {
+      if (current.crush_id) {
+        unlikeMutation.mutate(current.crush_id)
+      }
+      return
     }
-    return
+
+    if (showLikedOverlay) return
+
+    crushMutation.mutate(current.id)
+    setShowLikedOverlay(true)
+    heartScale.setValue(0)
+
+    Animated.sequence([
+      Animated.spring(heartScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+      Animated.delay(350),
+      Animated.timing(heartScale, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowLikedOverlay(false)
+      setCurrentIndex((prev) => prev + 1)
+    })
   }
-
-  if (showLikedOverlay) return
-
-  crushMutation.mutate(current.id)
-  setShowLikedOverlay(true)
-  heartScale.setValue(0)
-
-  Animated.sequence([
-    Animated.spring(heartScale, {
-      toValue: 1,
-      friction: 4,
-      useNativeDriver: true,
-    }),
-    Animated.delay(350),
-    Animated.timing(heartScale, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }),
-  ]).start(() => {
-    setShowLikedOverlay(false)
-    setCurrentIndex((prev) => prev + 1)
-  })
-}
 
   const handleSkip = () => {
     setCurrentIndex((prev) => prev + 1)
@@ -163,30 +163,39 @@ const unlikeMutation = useMutation({
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50">
+      <View className="flex-1 items-center justify-center bg-rose-50">
         <ActivityIndicator size="large" color="#E11D48" />
       </View>
     )
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="bg-white px-5 pt-12 pb-4 flex-row items-center justify-between border-b border-gray-100">
-        <Text className="text-2xl font-bold text-gray-900">Discover</Text>
-        <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
-          <SlidersHorizontal size={22} color="#374151" />
+    <View className="flex-1 bg-rose-50">
+      <LinearGradient
+        colors={["#FFF1F2", "#FFE4E6"]}
+        className="px-5 pt-12 pb-4 flex-row items-center justify-between border-b border-rose-100"
+      >
+        <View className="flex-row items-center">
+          <Heart size={20} color="#E11D48" fill="#E11D48" />
+          <Text className="text-2xl font-bold text-gray-900 ml-2">Discover</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => setShowFilters(!showFilters)}
+          className="w-9 h-9 rounded-full bg-white items-center justify-center shadow-sm"
+        >
+          <SlidersHorizontal size={18} color="#E11D48" />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       {showFilters && (
-        <View className="bg-white px-5 py-4 border-b border-gray-100">
+        <View className="bg-white px-5 py-4 border-b border-rose-100">
           <View className="flex-row gap-2 mb-3">
             <View className="flex-1">
               <Text className="text-gray-500 text-xs mb-1">Min Age</Text>
               <TouchableOpacity
                 onPress={() => setFilters({ ...filters, min_age: filters.min_age === "18" ? "" : "18" })}
                 className={`px-3 py-2 rounded-full items-center ${
-                  filters.min_age === "18" ? "bg-rose-500" : "bg-gray-100"
+                  filters.min_age === "18" ? "bg-rose-500" : "bg-rose-50"
                 }`}
               >
                 <Text className={filters.min_age === "18" ? "text-white" : "text-gray-700"}>
@@ -203,7 +212,7 @@ const unlikeMutation = useMutation({
                     setFilters({ ...filters, gender: filters.gender === g ? "" : g })
                   }
                   className={`px-3 py-2 rounded-full items-center mb-1 ${
-                    filters.gender === g ? "bg-rose-500" : "bg-gray-100"
+                    filters.gender === g ? "bg-rose-500" : "bg-rose-50"
                   }`}
                 >
                   <Text className={filters.gender === g ? "text-white" : "text-gray-700"}>
@@ -224,7 +233,7 @@ const unlikeMutation = useMutation({
       <ScrollView
         contentContainerClassName="flex-1 items-center justify-center px-5"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#E11D48" />
         }
       >
         {hasMore && currentUser ? (
@@ -232,24 +241,30 @@ const unlikeMutation = useMutation({
             <TouchableOpacity
               onPress={() => handleViewProfile(currentUser.id)}
               activeOpacity={0.95}
-              className="bg-white rounded-3xl overflow-hidden shadow-lg"
+              className="bg-white rounded-[32px] overflow-hidden border border-rose-100"
               style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
+                shadowColor: "#E11D48",
+                shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.15,
-                shadowRadius: 12,
+                shadowRadius: 20,
                 elevation: 8,
               }}
             >
               <View className="relative">
                 <Image
-                   source={getAvatarSource(
+                  source={getAvatarSource(
                     currentUser.photos?.find((p) => p.is_primary)?.url ||
-                    currentUser.photos?.[0]?.url
-                      )}
+                      currentUser.photos?.[0]?.url
+                  )}
                   className="w-full h-96"
                   resizeMode="cover"
                 />
+
+                {/* Soft romantic sparkle accents */}
+                <View style={{ position: "absolute", top: 14, left: 16 }}>
+                  <Sparkles size={18} color="#FFFFFF" opacity={0.85} />
+                </View>
+
                 {currentUser.already_liked && (
                   <View
                     style={{ position: "absolute", top: 12, right: 12 }}
@@ -259,21 +274,22 @@ const unlikeMutation = useMutation({
                     <Text className="text-white text-xs font-semibold ml-1">Liked</Text>
                   </View>
                 )}
-                             <LinearGradient
-  colors={["transparent", "rgba(0,0,0,0.85)"]}
-  style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 20 }}
->
-  <Text className="text-white text-2xl font-bold">
-    {currentUser.profile?.display_name || "Unknown"},
-    <Text className="text-white/90"> {currentUser.profile?.age || "?"}</Text>
-  </Text>
-  <View className="flex-row items-center mt-1">
-    <MapPin size={14} color="#FFFFFF" />
-    <Text className="text-white/80 text-sm ml-1">
-      {currentUser.profile?.school || "No school listed"}
-    </Text>
-  </View>
-</LinearGradient>
+
+                <LinearGradient
+                  colors={["transparent", "rgba(190,18,60,0.15)", "rgba(76,5,25,0.9)"]}
+                  style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 20 }}
+                >
+                  <Text className="text-white text-2xl font-bold">
+                    {currentUser.profile?.display_name || "Unknown"},
+                    <Text className="text-white/90"> {currentUser.profile?.age || "?"}</Text>
+                  </Text>
+                  <View className="flex-row items-center mt-1">
+                    <MapPin size={14} color="#FDA4AF" />
+                    <Text className="text-white/85 text-sm ml-1">
+                      {currentUser.profile?.school || "No school listed"}
+                    </Text>
+                  </View>
+                </LinearGradient>
 
                 {showLikedOverlay && (
                   <Animated.View
@@ -286,12 +302,12 @@ const unlikeMutation = useMutation({
                       bottom: 0,
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: "rgba(0,0,0,0.25)",
+                      backgroundColor: "rgba(225,29,72,0.25)",
                       opacity: heartScale,
                     }}
                   >
                     <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-                      <Heart size={110} color="#E11D48" fill="#E11D48" />
+                      <Heart size={110} color="#FFFFFF" fill="#E11D48" />
                     </Animated.View>
                   </Animated.View>
                 )}
@@ -300,7 +316,7 @@ const unlikeMutation = useMutation({
               <View className="p-5">
                 {currentUser.profile?.course && (
                   <View className="flex-row items-center mb-2">
-                    <GraduationCap size={16} color="#6B7280" />
+                    <GraduationCap size={16} color="#E11D48" />
                     <Text className="text-gray-600 ml-2">{currentUser.profile.course}</Text>
                   </View>
                 )}
@@ -310,42 +326,87 @@ const unlikeMutation = useMutation({
                   </Text>
                 )}
                 <View className="flex-row items-center mt-3">
-                  <Text className="text-rose-500 text-sm font-medium">Tap to view full profile</Text>
+                  <Heart size={13} color="#E11D48" fill="#E11D48" />
+                  <Text className="text-rose-500 text-sm font-medium ml-1.5">
+                    Tap to view full profile
+                  </Text>
                   <ChevronDown size={16} color="#E11D48" />
                 </View>
               </View>
             </TouchableOpacity>
 
-            <View className="flex-row justify-center items-center mt-6 gap-4">
+            <View className="flex-row justify-center items-center mt-7 gap-5">
               <TouchableOpacity
                 onPress={handleSkip}
-                className="w-16 h-16 rounded-full bg-white items-center justify-center shadow-md"
-                style={{ elevation: 3 }}
+                className="w-16 h-16 rounded-full bg-white items-center justify-center border border-rose-100"
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 6,
+                  elevation: 3,
+                }}
               >
-                <X size={28} color="#EF4444" />
+                <X size={26} color="#9CA3AF" />
               </TouchableOpacity>
-                          <TouchableOpacity
-  onPress={handleToggleLike}
-  disabled={crushMutation.isPending || unlikeMutation.isPending || showLikedOverlay}
-  className={`w-20 h-20 rounded-full items-center justify-center shadow-lg ${
-    currentUser?.already_liked ? "bg-white border-2 border-rose-500" : "bg-rose-500"
-  }`}
-  style={{ elevation: 5 }}
->
-  <Heart
-    size={32}
-    color={currentUser?.already_liked ? "#E11D48" : "#FFFFFF"}
-    fill={currentUser?.already_liked ? "#E11D48" : "#FFFFFF"}
-  />
-</TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleToggleLike}
+                disabled={crushMutation.isPending || unlikeMutation.isPending || showLikedOverlay}
+                className={`w-20 h-20 rounded-full items-center justify-center ${
+                  currentUser?.already_liked ? "bg-white border-2 border-rose-500" : ""
+                }`}
+                style={
+                  currentUser?.already_liked
+                    ? {
+                        shadowColor: "#E11D48",
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 10,
+                        elevation: 5,
+                      }
+                    : undefined
+                }
+              >
+                {currentUser?.already_liked ? (
+                  <Heart size={32} color="#E11D48" fill="#E11D48" />
+                ) : (
+                  <LinearGradient
+                    colors={["#FB7185", "#E11D48"]}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      shadowColor: "#E11D48",
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.35,
+                      shadowRadius: 12,
+                      elevation: 6,
+                    }}
+                  >
+                    <Heart size={32} color="#FFFFFF" fill="#FFFFFF" />
+                  </LinearGradient>
+                )}
+              </TouchableOpacity>
             </View>
-            
           </View>
         ) : (
           <View className="items-center px-8">
-            <View className="w-24 h-24 rounded-full bg-rose-100 items-center justify-center mb-4">
-              <Heart size={40} color="#E11D48" />
-            </View>
+            <LinearGradient
+              colors={["#FDA4AF", "#E11D48"]}
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: 48,
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Heart size={40} color="#FFFFFF" fill="#FFFFFF" />
+            </LinearGradient>
             <Text className="text-xl font-bold text-gray-900 text-center">
               No more profiles
             </Text>
@@ -359,7 +420,7 @@ const unlikeMutation = useMutation({
               <Text className="text-white font-medium">Start Over</Text>
             </TouchableOpacity>
           </View>
-                )}
+        )}
       </ScrollView>
     </View>
   )

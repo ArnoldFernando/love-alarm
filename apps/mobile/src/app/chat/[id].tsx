@@ -16,7 +16,10 @@ import { useLocalSearchParams, router } from "expo-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/services/api"
 import { useAuthStore } from "@/stores/auth"
-import { ArrowLeft, Send, Check, CheckCheck } from "lucide-react-native"
+import { getAvatarSource } from "@/utils/avatar"
+import { LinearGradient } from "expo-linear-gradient"
+import { ArrowLeft, Send, Check, CheckCheck, Heart, Smile } from "lucide-react-native"
+import EmojiPicker, { type EmojiType } from "rn-emoji-keyboard"
 
 interface Message {
   id: string
@@ -39,6 +42,7 @@ export default function ChatScreen() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
   const [messageText, setMessageText] = useState("")
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const flatListRef = useRef<FlatList>(null)
 
   const { data: conversation } = useQuery({
@@ -50,32 +54,31 @@ export default function ChatScreen() {
   })
 
   const { data: messages, isLoading } = useQuery({
-  queryKey: ["messages", id],
-  queryFn: async () => {
-    const res = await api.get(`/conversations/${id}/messages`)
-    const raw = res.data.data?.data || []
-    // Always render oldest → newest, regardless of what order the API returns
-    return [...raw].sort(
-      (a: Message, b: Message) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    )
-  },
-})
+    queryKey: ["messages", id],
+    queryFn: async () => {
+      const res = await api.get(`/conversations/${id}/messages`)
+      const raw = res.data.data?.data || []
+      return [...raw].sort(
+        (a: Message, b: Message) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+    },
+  })
 
- const sendMutation = useMutation({
-  mutationFn: async (content: string) => {
-    return api.post(`/conversations/${id}/messages`, { content })
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["messages", id] })
-    queryClient.invalidateQueries({ queryKey: ["conversations"] })
-    queryClient.invalidateQueries({ queryKey: ["matches"] })
-    setMessageText("")
-  },
-  onError: (err: any) => {
-    Alert.alert("Failed to send", err.response?.data?.message || "Something went wrong")
-  },
-})
+  const sendMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return api.post(`/conversations/${id}/messages`, { content })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", id] })
+      queryClient.invalidateQueries({ queryKey: ["conversations"] })
+      queryClient.invalidateQueries({ queryKey: ["matches"] })
+      setMessageText("")
+    },
+    onError: (err: any) => {
+      Alert.alert("Failed to send", err.response?.data?.message || "Something went wrong")
+    },
+  })
 
   const readMutation = useMutation({
     mutationFn: async () => {
@@ -96,11 +99,18 @@ export default function ChatScreen() {
     }
   }
 
-  const otherUser = conversation?.users?.find((u: any) => u.id !== user?.id)
+  const handlePickEmoji = (emojiObject: EmojiType) => {
+    setMessageText((prev) => prev + emojiObject.emoji)
+  }
+
+  const otherUser = conversation?.other_user
+
+  const otherUserAvatar = getAvatarSource(
+    otherUser?.photos?.find((p: any) => p.is_primary)?.url || otherUser?.photos?.[0]?.url
+  )
 
   const renderMessage = ({ item }: { item: Message }) => {
-  const isMine = item.sender_id === user?.id
-  console.log("DEBUG:", { messageSender: item.sender_id, myId: user?.id, isMine })
+    const isMine = item.sender_id === user?.id
 
     return (
       <View
@@ -108,28 +118,29 @@ export default function ChatScreen() {
           isMine ? "self-end ml-auto" : "self-start mr-auto"
         }`}
       >
-        <View
-          className={`px-4 py-2.5 rounded-2xl ${
-            isMine
-              ? "bg-rose-500 rounded-br-sm"
-              : "bg-white rounded-bl-sm"
-          }`}
-          style={
-            !isMine
-              ? {
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
-                }
-              : undefined
-          }
-        >
-          <Text className={`text-sm leading-5 ${isMine ? "text-white" : "text-gray-800"}`}>
-            {item.content}
-          </Text>
-        </View>
+        {isMine ? (
+          <LinearGradient
+            colors={["#FB7185", "#E11D48"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="px-4 py-2.5 rounded-2xl rounded-br-sm"
+          >
+            <Text className="text-base leading-6 text-white">{item.content}</Text>
+          </LinearGradient>
+        ) : (
+          <View
+            className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white border border-rose-50"
+            style={{
+              shadowColor: "#E11D48",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.06,
+              shadowRadius: 3,
+              elevation: 1,
+            }}
+          >
+            <Text className="text-base leading-6 text-gray-800">{item.content}</Text>
+          </View>
+        )}
         <View className={`flex-row items-center mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
           <Text className="text-gray-400 text-xs">
             {new Date(item.created_at).toLocaleTimeString([], {
@@ -154,30 +165,29 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-gray-50"
+      className="flex-1 bg-rose-50"
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <View className="bg-white px-5 pt-12 pb-4 flex-row items-center border-b border-gray-100">
+      <LinearGradient
+        colors={["#FDA4AF", "#FB7185"]}
+        className="pt-12 pb-4 px-5 flex-row items-center rounded-b-3xl"
+      >
         <TouchableOpacity onPress={() => router.back()} className="mr-3">
-          <ArrowLeft size={24} color="#374151" />
+          <ArrowLeft size={22} color="#FFFFFF" />
         </TouchableOpacity>
-        <Image
-          source={{
-            uri:
-              otherUser?.photo_url ||
-              "https://via.placeholder.com/100/E5E7EB/9CA3AF?text=?",
-          }}
-          className="w-10 h-10 rounded-full"
-        />
+        <View className="p-0.5 bg-white/30 rounded-full">
+          <Image source={otherUserAvatar} className="w-10 h-10 rounded-full border-2 border-white" />
+        </View>
         <View className="ml-3 flex-1">
-          <Text className="text-gray-900 font-bold text-base">
-            {otherUser?.display_name || "Chat"}
+          <Text className="text-white font-bold text-base">
+            {otherUser?.profile?.display_name || "Chat"}
           </Text>
-          <Text className="text-gray-500 text-xs">
-            {otherUser?.username ? `@${otherUser.username}` : ""}
+          <Text className="text-white/80 text-xs">
+            {otherUser?.profile?.username ? `@${otherUser.profile.username}` : ""}
           </Text>
         </View>
-      </View>
+        <Heart size={18} color="#FFFFFF" fill="#FFFFFF" opacity={0.85} />
+      </LinearGradient>
 
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
@@ -194,34 +204,72 @@ export default function ChatScreen() {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
             <View className="items-center justify-center py-20">
-              <Text className="text-gray-400 text-center">
-                No messages yet. Say hello!
+              <View className="w-16 h-16 rounded-full bg-rose-100 items-center justify-center mb-4">
+                <Heart size={28} color="#E11D48" fill="#E11D48" />
+              </View>
+              <Text className="text-gray-500 text-center text-base">
+                No messages yet. Say hello! 💕
               </Text>
             </View>
           }
         />
       )}
 
-      <View className="bg-white px-4 py-3 flex-row items-center border-t border-gray-100">
+      <View className="bg-white px-4 py-3 flex-row items-center border-t border-rose-100">
+        <TouchableOpacity
+          onPress={() => setShowEmojiPicker(true)}
+          className="mr-2 w-9 h-9 items-center justify-center"
+        >
+          <Smile size={24} color="#FDA4AF" />
+        </TouchableOpacity>
         <TextInput
           value={messageText}
           onChangeText={setMessageText}
-          placeholder="Type a message..."
-          placeholderTextColor="#9CA3AF"
+          placeholder="Say something sweet..."
+          placeholderTextColor="#FDA4AF"
           multiline
           maxLength={1000}
-          className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-gray-900 text-sm max-h-24"
+          className="flex-1 bg-rose-50 rounded-full px-4 py-2.5 text-gray-900 text-base max-h-24"
         />
         <TouchableOpacity
           onPress={handleSend}
           disabled={!messageText.trim() || sendMutation.isPending}
-          className={`ml-3 w-10 h-10 rounded-full items-center justify-center ${
-            messageText.trim() ? "bg-rose-500" : "bg-gray-200"
-          }`}
+          className="ml-3 w-10 h-10 rounded-full items-center justify-center overflow-hidden"
         >
-          <Send size={18} color={messageText.trim() ? "#FFFFFF" : "#9CA3AF"} />
+          {messageText.trim() ? (
+            <LinearGradient
+              colors={["#FB7185", "#E11D48"]}
+              className="w-10 h-10 items-center justify-center"
+            >
+              <Send size={18} color="#FFFFFF" />
+            </LinearGradient>
+          ) : (
+            <View className="w-10 h-10 bg-gray-200 items-center justify-center rounded-full">
+              <Send size={18} color="#9CA3AF" />
+            </View>
+          )}
         </TouchableOpacity>
       </View>
+
+      <EmojiPicker
+  open={showEmojiPicker}
+  onClose={() => setShowEmojiPicker(false)}
+  onEmojiSelected={handlePickEmoji}
+  allowMultipleSelections
+  theme={{
+    backdrop: "#00000055",
+    knob: "#FB7185",
+    container: "#FFFFFF",
+    header: "#E11D48",
+    skinTonesContainer: "#FFF1F2",
+    category: {
+      icon: "#FDA4AF",
+      iconActive: "#E11D48",
+      container: "#FFFFFF",
+      containerActive: "#FFF1F2",
+    },
+  }}
+/>
     </KeyboardAvoidingView>
   )
 }
