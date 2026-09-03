@@ -115,12 +115,6 @@ const unlikeMutation = useMutation({
   },
 })
 
-const handleUndoLike = () => {
-  if (lastLikedCrush) {
-    unlikeMutation.mutate(lastLikedCrush.crushId)
-  }
-}
-
   const handleToggleLike = () => {
   if (!users || !users[currentIndex]) return
   const current = users[currentIndex]

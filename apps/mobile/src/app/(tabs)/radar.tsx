@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState, useCallback } from "react"
-import { useFocusEffect } from "@react-navigation/native"
+import { useEffect, useRef, useState } from "react"
 import { View, Text, TouchableOpacity, Animated, Easing } from "react-native"
 import { useQuery } from "@tanstack/react-query"
 import * as Location from "expo-location"
 import { LinearGradient } from "expo-linear-gradient"
 import { api } from "@/services/api"
-import { Heart } from "lucide-react-native"
+import { Heart, Minus, Plus } from "lucide-react-native"
 import { router } from "expo-router"
 const RADAR_SIZE = 300
 const CENTER = RADAR_SIZE / 2
-const MAX_RADIUS_METERS = 30
+const DEFAULT_RADAR_DIAMETER_METERS = 30
+const RADAR_DIAMETERS_METERS = [10, 20, DEFAULT_RADAR_DIAMETER_METERS]
+const RADAR_REFRESH_INTERVAL_MS = 3000
 
 interface NearbyUser {
 user_id: string
@@ -17,21 +18,70 @@ display_name: string
 distance_meters: number
 }
 
+type RadarResponse = {
+data?: NearbyUser[] | { users?: NearbyUser[] }
+users?: NearbyUser[]
+}
+
+function getNearbyUsers(response: RadarResponse): NearbyUser[] {
+if (Array.isArray(response.data)) {
+return response.data
+}
+
+return response.data?.users ?? response.users ?? []
+}
+
 export default function RadarScreen() {
 const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+    const [radarDiameter, setRadarDiameter] = useState(DEFAULT_RADAR_DIAMETER_METERS)
     const sweepAnim = useRef(new Animated.Value(0)).current
     const pulseAnim = useRef(new Animated.Value(0)).current
 
+    // The API returns nearby users within its selected range. Keep this value
+    // aligned with that range so zooming does not hide valid radar results.
+    const radarRange = radarDiameter
+    const zoomLevelIndex = RADAR_DIAMETERS_METERS.indexOf(radarDiameter)
+    const canZoomIn = zoomLevelIndex > 0
+    const canZoomOut = zoomLevelIndex < RADAR_DIAMETERS_METERS.length - 1
+
+    const zoomIn = () => {
+      if (canZoomIn) {
+        setRadarDiameter(RADAR_DIAMETERS_METERS[zoomLevelIndex - 1])
+      }
+    }
+
+    const zoomOut = () => {
+      if (canZoomOut) {
+        setRadarDiameter(RADAR_DIAMETERS_METERS[zoomLevelIndex + 1])
+      }
+    }
+
       useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
+    let isMounted = true
 
-    ;(async () => {
+    const updateLocation = (coords: Location.LocationObjectCoords) => {
+      if (!isMounted) {
+        return
+      }
+
+      setLocation({ latitude: coords.latitude, longitude: coords.longitude })
+    }
+
+    const startLocationTracking = async () => {
+      try {
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== "granted") {
         setErrorMsg("Location permission is required to use the radar.")
         return
       }
+
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      })
+
+      updateLocation(currentLocation.coords)
 
       subscription = await Location.watchPositionAsync(
         {
@@ -40,13 +90,20 @@ const [location, setLocation] = useState<{ latitude: number; longitude: number }
           distanceInterval: 5,
         },
                 (loc) => {
-          console.log("Radar location updated")
-          setLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude })
+          updateLocation(loc.coords)
         }
       )
-    })()
+      } catch {
+        if (isMounted) {
+          setErrorMsg("Unable to get your location. Please enable location services and try again.")
+        }
+      }
+    }
+
+    void startLocationTracking()
 
     return () => {
+      isMounted = false
       subscription?.remove()
     }
   }, [])
@@ -55,7 +112,7 @@ const [location, setLocation] = useState<{ latitude: number; longitude: number }
     const sweepLoop = Animated.loop(
     Animated.timing(sweepAnim, {
     toValue: 1,
-    duration: 4000,
+    duration: RADAR_REFRESH_INTERVAL_MS,
     easing: Easing.linear,
     useNativeDriver: true,
     })
@@ -86,36 +143,30 @@ const [location, setLocation] = useState<{ latitude: number; longitude: number }
     }
     }, [])
 
-    const { data: nearbyUsers = [], isLoading } = useQuery<NearbyUser[]>({
+    const { data: nearbyUsers = [], isLoading, isError } = useQuery<NearbyUser[]>({
       queryKey: ["radar", location?.latitude, location?.longitude],
       queryFn: async () => {
       if (!location) return []
-      const res = await api.post("/proximity/radar", {
+
+      await api.post("/proximity/update", {
       latitude: location.latitude,
       longitude: location.longitude,
       })
-      return res.data.data?.users || []
+
+      const res = await api.post<RadarResponse>("/proximity/radar", {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      })
+      return getNearbyUsers(res.data)
       },
       enabled: !!location,
-      refetchInterval: 8000,
+      refetchInterval: RADAR_REFRESH_INTERVAL_MS,
+      retry: 1,
       })
 
-      useFocusEffect(
-  useCallback(() => {
-    if (!location) return
-
-    const reportLocation = () => {
-      api.post("/proximity/update", {
-        latitude: location.latitude,
-        longitude: location.longitude,
-      }).catch(() => {})
-    }
-
-    reportLocation()
-    const interval = setInterval(reportLocation, 8000)
-    return () => clearInterval(interval)
-  }, [location?.latitude, location?.longitude])
-)
+      const visibleNearbyUsers = nearbyUsers.filter(
+      (user) => user.distance_meters <= radarRange
+      )
 
       const rotate = sweepAnim.interpolate({
       inputRange: [0, 1],
@@ -140,7 +191,7 @@ const [location, setLocation] = useState<{ latitude: number; longitude: number }
             <Text className="text-white text-2xl font-bold ml-2">Love Radar</Text>
           </View>
           <Text className="text-rose-200 text-sm mt-1">
-            Discover hearts within {MAX_RADIUS_METERS}m
+            Discover hearts within {radarRange}m
           </Text>
         </View>
 
@@ -150,6 +201,31 @@ const [location, setLocation] = useState<{ latitude: number; longitude: number }
         </View>
         ) : (
         <View className="flex-1 items-center justify-center">
+          <View className="flex-row items-center mb-5 bg-white/10 rounded-full">
+            <TouchableOpacity
+              accessibilityLabel="Zoom out radar"
+              accessibilityRole="button"
+              activeOpacity={0.7}
+              disabled={!canZoomOut}
+              onPress={zoomOut}
+              style={{ padding: 10, opacity: canZoomOut ? 1 : 0.35 }}
+            >
+              <Minus size={18} color="#fecdd3" />
+            </TouchableOpacity>
+            <Text className="text-rose-100 text-sm font-semibold px-2">
+              {radarDiameter}m diameter
+            </Text>
+            <TouchableOpacity
+              accessibilityLabel="Zoom in radar"
+              accessibilityRole="button"
+              activeOpacity={0.7}
+              disabled={!canZoomIn}
+              onPress={zoomIn}
+              style={{ padding: 10, opacity: canZoomIn ? 1 : 0.35 }}
+            >
+              <Plus size={18} color="#fecdd3" />
+            </TouchableOpacity>
+          </View>
           <View style={{
               width: RADAR_SIZE,
               height: RADAR_SIZE,
@@ -242,9 +318,9 @@ const [location, setLocation] = useState<{ latitude: number; longitude: number }
               </View>
 
               {/* Blips */}
-              {nearbyUsers.map((u, index) => {
+              {visibleNearbyUsers.map((u, index) => {
               const angle = (index * 137.5) % 360
-              const radiusRatio = Math.min(u.distance_meters / MAX_RADIUS_METERS, 1)
+              const radiusRatio = Math.min(u.distance_meters / radarRange, 1)
               const r = radiusRatio * (CENTER - 24)
               const rad = (angle * Math.PI) / 180
               const x = CENTER + r * Math.cos(rad) - 12
@@ -289,7 +365,9 @@ const [location, setLocation] = useState<{ latitude: number; longitude: number }
             <Text className="text-rose-100 ml-2 text-sm">
               {isLoading
               ? "Scanning for hearts..."
-              : `${nearbyUsers.length} ${nearbyUsers.length === 1 ? "heart" : "hearts"} nearby`}
+              : isError
+              ? "Unable to scan nearby hearts"
+              : `${visibleNearbyUsers.length} ${visibleNearbyUsers.length === 1 ? "heart" : "hearts"} nearby`}
             </Text>
           </View>
         </View>

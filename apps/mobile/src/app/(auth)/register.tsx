@@ -1,10 +1,27 @@
 import { useState } from "react"
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from "react-native"
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, type TextInputProps } from "react-native"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { registerSchema } from "@lovealarm/shared-validation"
 import { api } from "@/services/api"
 import { router } from "expo-router"
+
+type RegisterField = {
+  name: "username" | "display_name" | "email" | "password" | "password_confirmation"
+  label: string
+  placeholder: string
+  autoCapitalize?: TextInputProps["autoCapitalize"]
+  keyboardType?: TextInputProps["keyboardType"]
+  secure?: boolean
+}
+
+const registerFields: RegisterField[] = [
+  { name: "username", label: "Username", placeholder: "johndoe" },
+  { name: "display_name", label: "Display Name", placeholder: "John Doe" },
+  { name: "email", label: "Email", placeholder: "you@example.com", autoCapitalize: "none", keyboardType: "email-address" },
+  { name: "password", label: "Password", placeholder: "Min 8 chars, mixed case, number, symbol", secure: true },
+  { name: "password_confirmation", label: "Confirm Password", placeholder: "Repeat password", secure: true },
+]
 
 export default function RegisterScreen() {
   const [loading, setLoading] = useState(false)
@@ -46,13 +63,7 @@ export default function RegisterScreen() {
         <Text className="text-2xl font-bold text-gray-900">Create Account</Text>
       </View>
 
-      {[
-        { name: "username", label: "Username", placeholder: "johndoe" },
-        { name: "display_name", label: "Display Name", placeholder: "John Doe" },
-        { name: "email", label: "Email", placeholder: "you@example.com", autoCapitalize: "none", keyboardType: "email-address" },
-        { name: "password", label: "Password", placeholder: "Min 8 chars, mixed case, number, symbol", secure: true },
-        { name: "password_confirmation", label: "Confirm Password", placeholder: "Repeat password", secure: true },
-      ].map((field) => (
+      {registerFields.map((field) => (
         <View key={field.name} className="mb-4">
           <Text className="text-sm font-medium text-gray-700 mb-1">{field.label}</Text>
           <Controller

@@ -1,8 +1,8 @@
 import "./global.css"
 import { useEffect, useState } from "react"
-import { Stack, Redirect } from "expo-router"
+import { Stack, Redirect, useSegments } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClient } from "@/lib/queryClient"
 import { useAuthStore } from "@/stores/auth"
 import {
@@ -20,6 +20,7 @@ export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isLoading = useAuthStore((state) => state.isLoading)
+  const segments = useSegments()
   const [loveAlarmEnabled, setLoveAlarmEnabled] = useState(false)
 
   useEffect(() => {
@@ -65,6 +66,8 @@ export default function RootLayout() {
     return null // or a splash/loading component
   }
 
+  const isAuthRoute = segments[0] === "(auth)"
+
   return (
     <QueryClientProvider client={queryClient}>
       <GlobalAlarmSound />
@@ -79,7 +82,8 @@ export default function RootLayout() {
         <Stack.Screen name="notifications" />
         <Stack.Screen name="blocked-users" />
       </Stack>
-      {!isAuthenticated && <Redirect href="/(auth)/login" />}
+      {!isAuthenticated && !isAuthRoute && <Redirect href="/(auth)/login" />}
+      {isAuthenticated && isAuthRoute && <Redirect href="/(tabs)" />}
       <StatusBar style="auto" />
     </QueryClientProvider>
   )

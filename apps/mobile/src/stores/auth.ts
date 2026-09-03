@@ -21,7 +21,7 @@ interface AuthState {
   initialize: () => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   user: null,
   isAuthenticated: false,
@@ -34,9 +34,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    const { token, user, isAuthenticated } = get()
+    if (!token && !user && !isAuthenticated) {
+      return
+    }
+
+    set({ token: null, user: null, isAuthenticated: false, isLoading: false })
+    queryClient.clear()
     SecureStore.deleteItemAsync("token")
     SecureStore.deleteItemAsync("user")
-    set({ token: null, user: null, isAuthenticated: false, isLoading: false })
   },
 
   initialize: async () => {
