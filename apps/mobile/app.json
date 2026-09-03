@@ -58,7 +58,6 @@
       "tsconfigPaths": true
     },
     "extra": {
-      "apiUrl": "EXPO_PUBLIC_API_URL",
       "router": {
         "origin": false,
         "root": "./src/app"

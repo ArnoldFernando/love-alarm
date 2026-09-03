@@ -16,7 +16,7 @@
 
 - `backend/.env.example` declares application, frontend URL, PostgreSQL, Redis, mail, S3, FCM, Reverb, social-auth, Sanctum, and proximity settings.
 - Web supports only `NEXT_PUBLIC_API_URL`; the Next config duplicates its localhost default.
-- The mobile app declares an `EXPO_PUBLIC_API_URL` name in `app.json`, but the Axios implementation ignores it and instead derives an insecure `http` URL from Expo's host URI.
+- Mobile uses `EXPO_PUBLIC_API_URL` when configured. For local Expo development it derives the Metro host and connects to the API on port 8011.
 - Docker Compose hardcodes local development PostgreSQL credentials, exposes PostgreSQL and Redis to the host, and starts PHP-FPM/Nginx, queue worker, and Reverb.
 
 ## Observability

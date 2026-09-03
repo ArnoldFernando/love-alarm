@@ -17,7 +17,7 @@ The Next middleware deliberately does not authenticate server-side because the t
 ## Mobile to API to database flow
 
 1. Expo Router screens call Axios from `apps/mobile/src/services/api.ts`.
-2. Axios derives a local HTTP address from Expo host metadata (not `EXPO_PUBLIC_API_URL`) and adds the SecureStore-held bearer token.
+2. Axios uses `EXPO_PUBLIC_API_URL` when configured; otherwise it derives a local HTTP address from Expo host metadata and adds the SecureStore-held bearer token.
 3. Laravel performs the same route middleware, Form Request validation, service logic, and persistence path as web calls.
 4. Location tracking posts coordinate updates/checks; Laravel stores a Redis location with a TTL and also creates PostGIS `proximity_events`.
 5. Proximity checks create alarms/notifications and broadcast chat events through Reverb; queued work is served by the Compose queue container.

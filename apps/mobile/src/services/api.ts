@@ -3,6 +3,11 @@ import Constants from "expo-constants"
 import { useAuthStore } from "@/stores/auth"
 
 const getBaseUrl = () => {
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim()
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/+$/, "")
+  }
+
   const hostUri = Constants.expoConfig?.hostUri // e.g. "192.168.20.199:8081"
   const host = hostUri?.split(":")[0]
   return host ? `http://${host}:8011/api/v1` : "http://localhost:8011/api/v1"

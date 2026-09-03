@@ -52,7 +52,8 @@ class AuthService
 
     public function login(array $credentials, string $deviceName = 'api'): array
     {
-        $user = User::where('email', $credentials['email'])->first();
+        // case-insensitive lookup guards against pre-existing mixed-case emails
+        $user = User::whereRaw('LOWER(email) = ?', [strtolower(trim($credentials['email']))])->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return [
