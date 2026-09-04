@@ -76,7 +76,13 @@ class AuthService
             ];
         }
 
-        $token = $user->createToken($deviceName, ['*'], now()->addMinutes(config('sanctum.expiration')))->plainTextToken;
+        $expiration = config('sanctum.expiration');
+
+$token = $user->createToken(
+    $deviceName,
+    ['*'],
+    $expiration !== null ? now()->addMinutes($expiration) : null
+)->plainTextToken;
 
         return [
             'success' => true,
