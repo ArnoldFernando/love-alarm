@@ -13,8 +13,12 @@ const getBaseUrl = () => {
   return host ? `http://${host}:8011/api/v1` : "http://localhost:8011/api/v1"
 }
 
+const API_BASE_URL = getBaseUrl()
+
+console.log("🔥 API BASE URL:", API_BASE_URL)
+
 export const api = axios.create({
-  baseURL: getBaseUrl(),
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

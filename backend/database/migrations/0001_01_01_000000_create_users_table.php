@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    public $withinTransaction = false;
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -22,7 +23,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index('email');
+            // $table->index('email');
             $table->index('role');
             $table->index('account_status');
             $table->index(['provider', 'provider_id']);

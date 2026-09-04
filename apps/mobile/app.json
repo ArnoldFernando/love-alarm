@@ -44,6 +44,7 @@
       "expo-secure-store",
       "expo-notifications",
       "./plugins/withReactNativeNodeModulesDir.js",
+      "./plugins/withCleartextTraffic.js",
       [
         "expo-location",
         {
