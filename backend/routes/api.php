@@ -28,6 +28,19 @@ Route::get('debug/header', function (\Illuminate\Http\Request $request) {
     ]);
 });
 
+Route::get('debug/header', function (\Illuminate\Http\Request $request) {
+    return response()->json([
+        'has_authorization_header' => $request->header('Authorization') !== null,
+        'raw_authorization_length' => $request->header('Authorization')
+            ? strlen($request->header('Authorization'))
+            : 0,
+        'starts_with_bearer' => $request->header('Authorization')
+            ? str_starts_with($request->header('Authorization'), 'Bearer ')
+            : false,
+        'bearer_token_exists' => $request->bearerToken() !== null,
+    ]);
+});
+
     // Public auth routes
     Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
