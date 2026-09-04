@@ -18,6 +18,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
+Route::get('debug/sanctum', function (\Illuminate\Http\Request $request) {
+    return response()->json([
+        'has_bearer' => $request->bearerToken() !== null,
+        'user_id' => $request->user('sanctum')?->id,
+        'authenticated' => $request->user('sanctum') !== null,
+    ]);
+})->middleware('auth:sanctum');
+
     // Public auth routes
     Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
