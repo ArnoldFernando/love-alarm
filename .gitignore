@@ -10,7 +10,9 @@ vendor/
 backend/storage/*.key
 backend/.env
 .phpunit.result.cache
-
+backend/.env.docker
+backend.env.production
 # General
 .DS_Store
 *.log
+

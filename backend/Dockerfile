@@ -52,7 +52,7 @@ RUN printf '%s\n' \
     '    </IfModule>' \
     '    RewriteEngine On' \
     '    RewriteCond %{HTTP:Authorization} .' \
-    '    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]' \
+    '    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP_AUTHORIZATION}]' \
     '    RewriteCond %{REQUEST_FILENAME} !-d' \
     '    RewriteCond %{REQUEST_FILENAME} !-f' \
     '    RewriteRule ^ index.php [L]' \
@@ -67,14 +67,6 @@ RUN composer install \
     --optimize-autoloader
 
 # Create required Laravel directories
-RUN mkdir -p \
-    storage/framework/cache \
-    storage/framework/sessions \
-    storage/framework/views \
-    storage/logs \
-    storage/app/public \
-    bootstrap/cache
-
 RUN mkdir -p \
     storage/framework/cache \
     storage/framework/sessions \
