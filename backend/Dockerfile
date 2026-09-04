@@ -75,17 +75,16 @@ RUN mkdir -p \
     storage/app/public \
     bootstrap/cache
 
+RUN mkdir -p \
+    storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    storage/app/public \
+    bootstrap/cache
+
 # Fix Laravel public storage symlink
-RUN rm -f public/storage && php artisan storage:link
-
-# Set permissions
-RUN chown -R www-data:www-data \
-    storage \
-    bootstrap/cache
-
-RUN chmod -R 775 \
-    storage \
-    bootstrap/cache
+RUN rm -rf public/storage && php artisan storage:link
 
 # Set permissions
 RUN chown -R www-data:www-data \
