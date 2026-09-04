@@ -18,13 +18,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
-Route::get('debug/sanctum', function (\Illuminate\Http\Request $request) {
+Route::get('debug/header', function (\Illuminate\Http\Request $request) {
     return response()->json([
-        'has_bearer' => $request->bearerToken() !== null,
-        'user_id' => $request->user('sanctum')?->id,
-        'authenticated' => $request->user('sanctum') !== null,
+        'has_authorization_header' => $request->header('Authorization') !== null,
+        'has_bearer_token' => $request->bearerToken() !== null,
+        'authorization_prefix' => $request->header('Authorization')
+            ? substr($request->header('Authorization'), 0, 7)
+            : null,
     ]);
-})->middleware('auth:sanctum');
+});
 
     // Public auth routes
     Route::post('auth/register', [AuthController::class, 'register']);
