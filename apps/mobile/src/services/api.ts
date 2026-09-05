@@ -18,7 +18,8 @@ const API_BASE_URL = getBaseUrl()
 console.log("🔥 API BASE URL:", API_BASE_URL)
 
 export const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getBaseUrl(),
+  timeout: 15000,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -27,18 +28,37 @@ export const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const token = useAuthStore.getState().token
+
+  console.log(
+    "API REQUEST:",
+    config.method?.toUpperCase(),
+    config.url,
+    "HAS TOKEN:",
+    !!token
+  )
+
   if (token) {
+    config.headers = config.headers ?? {}
     config.headers.Authorization = `Bearer ${token}`
   }
+
   return config
 })
 
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  r => r,
+  error => {
+    console.error(
+      "API ERROR:",
+      error.config?.method?.toUpperCase(),
+      error.config?.url,
+      error.response?.status,
+      error.response?.data
+    )
+
     if (error.response?.status === 401) {
-      useAuthStore.getState().logout()
-    }
+  console.error("API 401 → NOT LOGGING OUT (DEBUG)")
+}
 
     return Promise.reject(error)
   },

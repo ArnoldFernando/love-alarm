@@ -16,9 +16,9 @@ interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  setAuth: (token: string, user: User) => void
-  logout: () => void
-  initialize: () => void
+  setAuth: (token: string, user: User) => Promise<void>
+  logout: () => Promise<void>
+  initialize: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -27,41 +27,88 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
 
-  setAuth: (token, user) => {
-    SecureStore.setItemAsync("token", token)
-    SecureStore.setItemAsync("user", JSON.stringify(user))
-    set({ token, user, isAuthenticated: true, isLoading: false })
+  setAuth: async (token, user) => {
+    try {
+      // Save credentials first
+      await SecureStore.setItemAsync("token", token)
+      await SecureStore.setItemAsync("user", JSON.stringify(user))
+
+      // Only mark authenticated after persistence succeeds
+      set({
+        token,
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      })
+    } catch (error) {
+      console.error("Failed to save authentication:", error)
+
+      set({
+        token: null,
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      })
+
+      throw error
+    }
   },
 
-  logout: () => {
+  logout: async () => {
     const { token, user, isAuthenticated } = get()
+
     if (!token && !user && !isAuthenticated) {
       return
     }
 
-    set({ token: null, user: null, isAuthenticated: false, isLoading: false })
+    set({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    })
+
     queryClient.clear()
-    SecureStore.deleteItemAsync("token")
-    SecureStore.deleteItemAsync("user")
+
+    try {
+      await SecureStore.deleteItemAsync("token")
+      await SecureStore.deleteItemAsync("user")
+    } catch (error) {
+      console.error("Failed to clear authentication:", error)
+    }
   },
 
   initialize: async () => {
     try {
       const token = await SecureStore.getItemAsync("token")
       const userJson = await SecureStore.getItemAsync("user")
+
       let user: User | null = null
+
       if (userJson) {
         try {
           user = JSON.parse(userJson) as User
-        } catch (parseError) {
-          console.error("Failed to parse user data from secure store:", parseError)
+        } catch (error) {
+          console.error("Failed to parse stored user:", error)
           await SecureStore.deleteItemAsync("user")
         }
       }
-      set({ token, user, isAuthenticated: !!token, isLoading: false })
+
+      set({
+        token,
+        user,
+        isAuthenticated: !!token,
+        isLoading: false,
+      })
     } catch (error) {
       console.error("Failed to initialize auth:", error)
-      set({ token: null, user: null, isAuthenticated: false, isLoading: false })
+
+      set({
+        token: null,
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      })
     }
   },
 }))

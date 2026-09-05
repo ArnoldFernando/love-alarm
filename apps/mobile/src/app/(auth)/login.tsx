@@ -20,21 +20,58 @@ export default function LoginScreen() {
     defaultValues: { email: "", password: "" },
   })
 
-  const onSubmit = async (data: any) => {
-    setLoading(true)
-    try {
-      const res = await api.post("/auth/login", data)
-      console.log("Login request completed", res.status)
-      if (res.data.success) {
-  await setAuth(res.data.data.token, res.data.data.user)
-  router.replace("/(tabs)")
-}
-    } catch (err: any) {
-      Alert.alert("Login Failed", err.response?.data?.message || "Something went wrong")
-    } finally {
-      setLoading(false)
+ const onSubmit = async (data: any) => {
+  console.log("LOGIN: submit started")
+  console.log("LOGIN: API URL =", api.defaults.baseURL)
+
+  setLoading(true)
+
+  try {
+    console.log("LOGIN: sending request")
+
+    const res = await api.post("/auth/login", {
+      email: data.email.trim(),
+      password: data.password,
+    })
+
+    console.log("LOGIN: response received", res.status)
+    console.log("LOGIN: response data", JSON.stringify(res.data))
+
+    if (res.data.success) {
+      console.log("LOGIN: saving auth")
+
+      await setAuth(
+        res.data.data.token,
+        res.data.data.user
+      )
+
+      console.log("LOGIN: auth saved, navigating")
+
+      router.replace("/(tabs)")
+
+      console.log("LOGIN: navigation called")
+    } else {
+      Alert.alert(
+        "Login Failed",
+        res.data.message || "Login failed"
+      )
     }
+  } catch (err: any) {
+    console.error("LOGIN ERROR:", err)
+    console.error("LOGIN ERROR RESPONSE:", err.response?.data)
+    console.error("LOGIN ERROR MESSAGE:", err.message)
+
+    Alert.alert(
+      "Login Failed",
+      err.response?.data?.message ||
+        err.message ||
+        "Something went wrong"
+    )
+  } finally {
+    console.log("LOGIN: finally")
+    setLoading(false)
   }
+}
 
   return (
     <View className="flex-1 bg-white px-6 pt-20">

@@ -28,6 +28,8 @@ Route::get('debug/header', function (\Illuminate\Http\Request $request) {
     ]);
 });
 
+
+
     // Public auth routes
     Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
