@@ -18,26 +18,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
-Route::get('debug/header', function (\Illuminate\Http\Request $request) {
-    return response()->json([
-        'has_authorization_header' => $request->header('Authorization') !== null,
-        'has_bearer_token' => $request->bearerToken() !== null,
-        'authorization_prefix' => $request->header('Authorization')
-            ? substr($request->header('Authorization'), 0, 7)
-            : null,
-    ]);
-});
 
 Route::get('debug/header', function (\Illuminate\Http\Request $request) {
     return response()->json([
-        'has_authorization_header' => $request->header('Authorization') !== null,
-        'raw_authorization_length' => $request->header('Authorization')
-            ? strlen($request->header('Authorization'))
-            : 0,
-        'starts_with_bearer' => $request->header('Authorization')
-            ? str_starts_with($request->header('Authorization'), 'Bearer ')
-            : false,
-        'bearer_token_exists' => $request->bearerToken() !== null,
+        'request_authorization' => $request->header('Authorization'),
+        'server_http_authorization' => $_SERVER['HTTP_AUTHORIZATION'] ?? null,
+        'server_redirect_http_authorization' => $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null,
+        'bearer_token' => $request->bearerToken(),
     ]);
 });
 
