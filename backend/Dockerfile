@@ -57,7 +57,7 @@ RUN printf '%s\n' \
     '    </IfModule>' \
     '    RewriteEngine On' \
     '    RewriteCond %{HTTP:Authorization} .' \
-    '    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP_AUTHORIZATION}]' \
+    '    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]' \
     '    RewriteCond %{REQUEST_FILENAME} !-d' \
     '    RewriteCond %{REQUEST_FILENAME} !-f' \
     '    RewriteRule ^ index.php [L]' \
