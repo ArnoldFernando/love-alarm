@@ -22,11 +22,16 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache rewrite
-RUN a2enmod rewrite
+# Enable Apache rewrite and headers
+RUN a2enmod rewrite headers
 
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
+# Preserve Authorization header for Laravel/Sanctum
+RUN printf '%s\n' \
+    'SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1' \
+    > /etc/apache2/conf-available/authorization.conf \
+    && a2enconf authorization
 # Laravel public directory
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
