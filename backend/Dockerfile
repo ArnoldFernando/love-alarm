@@ -62,10 +62,6 @@ RUN printf '%s\n' \
     '    RewriteCond %{REQUEST_FILENAME} !-f' \
     '    RewriteRule ^ index.php [L]' \
     '</IfModule>' \
-    '<IfModule mod_headers.c>' \
-    '    Header echo ^Authorization$' \
-    '    Header set X-Debug-Env-Auth "%{HTTP_AUTHORIZATION}e"' \
-    '</IfModule>' \
     > public/.htaccess
 # Install production dependencies
 RUN composer install \
