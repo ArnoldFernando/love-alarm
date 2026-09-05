@@ -64,9 +64,9 @@ RUN printf '%s\n' \
     '</IfModule>' \
     '<IfModule mod_headers.c>' \
     '    Header echo ^Authorization$' \
+    '    Header set X-Debug-Env-Auth "%{HTTP_AUTHORIZATION}e"' \
     '</IfModule>' \
     > public/.htaccess
-
 # Install production dependencies
 RUN composer install \
     --no-dev \
