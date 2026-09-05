@@ -131,7 +131,7 @@ class CrushService
                 ];
             });
         } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() === '23505') { // unique_violation
+            if (in_array($e->getCode(), ['23505', '25P02'])) {
                 return [
                     'success' => false,
                     'message' => 'You have already liked this user.',
