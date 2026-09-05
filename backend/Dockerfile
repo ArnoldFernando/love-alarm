@@ -62,6 +62,9 @@ RUN printf '%s\n' \
     '    RewriteCond %{REQUEST_FILENAME} !-f' \
     '    RewriteRule ^ index.php [L]' \
     '</IfModule>' \
+    '<IfModule mod_headers.c>' \
+    '    Header echo ^Authorization$' \
+    '</IfModule>' \
     > public/.htaccess
 
 # Install production dependencies
