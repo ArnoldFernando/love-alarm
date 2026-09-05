@@ -19,9 +19,7 @@ use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
-    public function __construct(private AuthService $authService)
-    {
-    }
+    public function __construct(private AuthService $authService) {}
 
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -29,7 +27,7 @@ class AuthController extends Controller
 
         return $this->successResponse(
             new UserResource($user),
-            'Registration successful. Please verify your email.',
+            'Registration successful.',
             201
         );
     }

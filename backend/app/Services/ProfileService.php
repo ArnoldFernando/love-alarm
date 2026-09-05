@@ -46,10 +46,10 @@ class ProfileService
         $filename = Str::uuid() . '.' . $extension;
         $path = 'photos/' . $user->id . '/' . $filename;
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk(config('filesystems.default', 's3'));
         $disk->put($path, file_get_contents($file->getRealPath()), 'public');
 
-        $url = '/storage/' . $path; // relative path — no host baked in
+        $url = $disk->url($path);
 
         if ($isPrimary) {
             $user->photos()->update(['is_primary' => false]);

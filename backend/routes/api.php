@@ -19,14 +19,14 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
 
-Route::get('debug/header', function (\Illuminate\Http\Request $request) {
-    return response()->json([
-        'request_authorization' => $request->header('Authorization'),
-        'server_http_authorization' => $_SERVER['HTTP_AUTHORIZATION'] ?? null,
-        'server_redirect_http_authorization' => $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null,
-        'bearer_token' => $request->bearerToken(),
-    ]);
-});
+    Route::get('debug/header', function (\Illuminate\Http\Request $request) {
+        return response()->json([
+            'request_authorization' => $request->header('Authorization'),
+            'server_http_authorization' => $_SERVER['HTTP_AUTHORIZATION'] ?? null,
+            'server_redirect_http_authorization' => $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null,
+            'bearer_token' => $request->bearerToken(),
+        ]);
+    });
 
 
 
@@ -73,13 +73,19 @@ Route::get('debug/header', function (\Illuminate\Http\Request $request) {
         Route::get('matches/{id}', [MatchController::class, 'show']);
 
         // Proximity
+        // Proximity
         Route::post('proximity/update', [ProximityController::class, 'update'])
-            ->middleware('throttle:location');
+            ->middleware('throttle:location')
+            ->withoutMiddleware('throttle:api');
         Route::post('proximity/check', [ProximityController::class, 'check'])
-            ->middleware('throttle:location');
+            ->middleware('throttle:location')
+            ->withoutMiddleware('throttle:api');
         Route::post('proximity/radar', [ProximityController::class, 'radar'])
-            ->middleware('throttle:location');
-Route::post('proximity/clear', [ProximityController::class, 'clear']);
+            ->middleware('throttle:location')
+            ->withoutMiddleware('throttle:api');
+        Route::post('proximity/clear', [ProximityController::class, 'clear'])
+            ->middleware('throttle:location')
+            ->withoutMiddleware('throttle:api');
         // Alarms
         Route::get('alarms', [AlarmController::class, 'index']);
         Route::get('alarms/{id}', [AlarmController::class, 'show']);

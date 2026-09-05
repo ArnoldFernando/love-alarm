@@ -1,5 +1,5 @@
 "use client"
-
+import { useAuthStore } from "@/stores/auth"
 import { useState } from "react"
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image } from "react-native"
 import { getAvatarSource } from "@/utils/avatar"
@@ -27,11 +27,13 @@ interface Alarm {
 export default function AlarmsScreen() {
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated)
+  const isLoading = useAuthStore(s => s.isLoading)
 
-  const { data: alarms = [], isLoading } = useQuery<Alarm[]>({
+  const { data: alarms = [], isLoading: alarmsLoading } = useQuery<Alarm[]>({
     queryKey: ["alarms"],
     queryFn: async (): Promise<Alarm[]> => {
-  const res = await api.get("/alarms")
+      const res = await api.get("/alarms")
 
   console.log("Alarms request completed", res.status)
 
@@ -53,7 +55,7 @@ export default function AlarmsScreen() {
   console.warn("Unexpected alarms response format", res.status)
 
   return []
-},
+}, enabled: isAuthenticated && !isLoading,
   })
 
   const acknowledgeMutation = useMutation({

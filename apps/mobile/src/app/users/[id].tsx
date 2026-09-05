@@ -21,6 +21,9 @@ export default function UserProfileScreen() {
     },
   })
 
+  const alreadyLiked = userData?.already_liked
+  const crushId = userData?.crush_id
+
 const crushMutation = useMutation({
   mutationFn: async () => {
     return api.post("/crushes", { to_user_id: id })
@@ -108,13 +111,20 @@ const crushMutation = useMutation({
 
         <View className="flex-row mt-5 gap-2">
           <TouchableOpacity
-            onPress={() => crushMutation.mutate()}
-            disabled={crushMutation.isPending}
-            className="flex-1 bg-rose-500 rounded-xl py-3 items-center flex-row justify-center"
-          >
-            <Heart size={18} color="#FFFFFF" fill="#FFFFFF" />
-            <Text className="text-white font-medium ml-2">Like</Text>
-          </TouchableOpacity>
+  onPress={() => {
+    if (alreadyLiked) return // or wire up an unlike mutation, matching Discover's behavior
+    crushMutation.mutate()
+  }}
+  disabled={crushMutation.isPending || alreadyLiked}
+  className={`flex-1 rounded-xl py-3 items-center flex-row justify-center ${
+    alreadyLiked ? "bg-gray-200" : "bg-rose-500"
+  }`}
+>
+  <Heart size={18} color={alreadyLiked ? "#9CA3AF" : "#FFFFFF"} fill={alreadyLiked ? "#9CA3AF" : "#FFFFFF"} />
+  <Text className={`font-medium ml-2 ${alreadyLiked ? "text-gray-500" : "text-white"}`}>
+    {alreadyLiked ? "Liked" : "Like"}
+  </Text>
+</TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowReport(!showReport)}
             className="px-4 bg-gray-100 rounded-xl items-center justify-center"

@@ -62,73 +62,83 @@ class CrushService
             ];
         }
 
-        $result = DB::transaction(function () use ($fromUser, $toUser, $toUserId) {
-            $crush = Crush::create([
-                'from_user_id' => $fromUser->id,
-                'to_user_id' => $toUserId,
-            ]);
-
-            // Check for mutual crush
-            $reverseCrush = Crush::where('from_user_id', $toUserId)
-                ->where('to_user_id', $fromUser->id)
-                ->first();
-
-            $match = null;
-            $conversation = null;
-
-            if ($reverseCrush) {
-                // Create match atomically
-                $match = MatchModel::firstOrCreate(
-                    [
-                        'user_one_id' => min($fromUser->id, $toUserId),
-                        'user_two_id' => max($fromUser->id, $toUserId),
-                    ],
-                    ['matched_at' => now()]
-                );
-
-                // Create conversation if not exists
-                $conversation = Conversation::firstOrCreate(
-                    ['match_id' => $match->id],
-                    ['last_message_at' => null]
-                );
-
-                // Attach users to conversation
-                $conversation->users()->syncWithoutDetaching([
-                    $fromUser->id => ['id' => (string) Str::uuid(), 'last_read_at' => null],
-                    $toUserId => ['id' => (string) Str::uuid(), 'last_read_at' => null],
+        try {
+            $result = DB::transaction(function () use ($fromUser, $toUser, $toUserId) {
+                $crush = Crush::create([
+                    'from_user_id' => $fromUser->id,
+                    'to_user_id' => $toUserId,
                 ]);
 
-                // Create notifications
-                Notification::create([
-                    'user_id' => $fromUser->id,
-                    'type' => 'match_created',
-                    'title' => "It's a Match!",
-                    'body' => 'You have a new match.',
-                    'data' => ['match_id' => $match->id],
-                ]);
+                // Check for mutual crush
+                $reverseCrush = Crush::where('from_user_id', $toUserId)
+                    ->where('to_user_id', $fromUser->id)
+                    ->first();
 
-                Notification::create([
-                    'user_id' => $toUserId,
-                    'type' => 'match_created',
-                    'title' => "It's a Match!",
-                    'body' => 'You have a new match.',
-                    'data' => ['match_id' => $match->id],
-                ]);
+                $match = null;
+                $conversation = null;
 
-                AuditService::log(
-                    'MATCH_CREATED',
-                    MatchModel::class,
-                    $match->id,
-                    ['user_one_id' => $fromUser->id, 'user_two_id' => $toUserId]
-                );
+                if ($reverseCrush) {
+                    // Create match atomically
+                    $match = MatchModel::firstOrCreate(
+                        [
+                            'user_one_id' => min($fromUser->id, $toUserId),
+                            'user_two_id' => max($fromUser->id, $toUserId),
+                        ],
+                        ['matched_at' => now()]
+                    );
+
+                    // Create conversation if not exists
+                    $conversation = Conversation::firstOrCreate(
+                        ['match_id' => $match->id],
+                        ['last_message_at' => null]
+                    );
+
+                    // Attach users to conversation
+                    $conversation->users()->syncWithoutDetaching([
+                        $fromUser->id => ['id' => (string) Str::uuid(), 'last_read_at' => null],
+                        $toUserId => ['id' => (string) Str::uuid(), 'last_read_at' => null],
+                    ]);
+
+                    // Create notifications
+                    Notification::create([
+                        'user_id' => $fromUser->id,
+                        'type' => 'match_created',
+                        'title' => "It's a Match!",
+                        'body' => 'You have a new match.',
+                        'data' => ['match_id' => $match->id],
+                    ]);
+
+                    Notification::create([
+                        'user_id' => $toUserId,
+                        'type' => 'match_created',
+                        'title' => "It's a Match!",
+                        'body' => 'You have a new match.',
+                        'data' => ['match_id' => $match->id],
+                    ]);
+
+                    AuditService::log(
+                        'MATCH_CREATED',
+                        MatchModel::class,
+                        $match->id,
+                        ['user_one_id' => $fromUser->id, 'user_two_id' => $toUserId]
+                    );
+                }
+
+                return [
+                    'crush' => $crush,
+                    'match' => $match,
+                    'conversation' => $conversation,
+                ];
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() === '23505') { // unique_violation
+                return [
+                    'success' => false,
+                    'message' => 'You have already liked this user.',
+                ];
             }
-
-            return [
-                'crush' => $crush,
-                'match' => $match,
-                'conversation' => $conversation,
-            ];
-        });
+            throw $e;
+        }
 
         return [
             'success' => true,
@@ -140,21 +150,6 @@ class CrushService
             ],
         ];
     }
-
-    public function removeCrush(User $user, string $crushId): bool
-    {
-        $crush = Crush::where('id', $crushId)
-            ->where('from_user_id', $user->id)
-            ->first();
-
-        if (! $crush) {
-            return false;
-        }
-
-        $crush->delete();
-        return true;
-    }
-
     public function getUserCrushes(User $user): Collection
     {
         return Crush::where('from_user_id', $user->id)
