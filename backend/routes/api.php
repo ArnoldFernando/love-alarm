@@ -19,14 +19,21 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
 
-    Route::get('debug/header', function (\Illuminate\Http\Request $request) {
+    Route::get('/health', function () {
         return response()->json([
-            'request_authorization' => $request->header('Authorization'),
-            'server_http_authorization' => $_SERVER['HTTP_AUTHORIZATION'] ?? null,
-            'server_redirect_http_authorization' => $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null,
-            'bearer_token' => $request->bearerToken(),
+            'status' => 'ok',
+            'service' => 'love-alarm-api',
         ]);
     });
+
+    // Route::get('debug/header', function (\Illuminate\Http\Request $request) {
+    //     return response()->json([
+    //         'request_authorization' => $request->header('Authorization'),
+    //         'server_http_authorization' => $_SERVER['HTTP_AUTHORIZATION'] ?? null,
+    //         'server_redirect_http_authorization' => $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null,
+    //         'bearer_token' => $request->bearerToken(),
+    //     ]);
+    // });
 
 
 
