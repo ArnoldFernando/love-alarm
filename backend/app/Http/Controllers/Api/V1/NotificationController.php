@@ -10,16 +10,14 @@ use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
-    public function __construct(private NotificationService $notificationService)
-    {
-    }
+    public function __construct(private NotificationService $notificationService) {}
 
     public function index(Request $request): JsonResponse
     {
         $notifications = $this->notificationService->getUserNotifications($request->user());
 
         return $this->successResponse([
-            'data' => NotificationResource::collection($notifications),
+            'data' => NotificationResource::collection($notifications)->collection,
             'pagination' => [
                 'current_page' => $notifications->currentPage(),
                 'last_page' => $notifications->lastPage(),

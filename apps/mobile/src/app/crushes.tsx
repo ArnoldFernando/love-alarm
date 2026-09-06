@@ -17,12 +17,13 @@ export default function CrushesScreen() {
   const queryClient = useQueryClient()
 
   const { data: crushes, isLoading } = useQuery({
-    queryKey: ["crushes-received"],
-    queryFn: async () => {
-      const res = await api.get("/crushes/received")
-      return res.data.data
-    },
-  })
+  queryKey: ["crushes-received"],
+  queryFn: async () => {
+    const res = await api.get("/crushes/received")
+    return res.data.data?.data || []
+  },
+})
+
 
   const crushBackMutation = useMutation({
     mutationFn: async (toUserId: string) => {

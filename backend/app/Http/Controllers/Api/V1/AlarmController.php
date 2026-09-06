@@ -18,7 +18,7 @@ class AlarmController extends Controller
             ->paginate(20);
 
         return $this->successResponse([
-            'data' => AlarmResource::collection($alarms),
+            'data' => AlarmResource::collection($alarms)->collection, // ->collection unwraps to a plain Collection, avoiding the extra self-wrap
             'pagination' => [
                 'current_page' => $alarms->currentPage(),
                 'last_page' => $alarms->lastPage(),

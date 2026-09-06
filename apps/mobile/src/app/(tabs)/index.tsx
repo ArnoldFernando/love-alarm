@@ -24,9 +24,8 @@ export default function HomeScreen() {
     return {
       alarms: alarmsRes.status === "fulfilled" ? alarmsRes.value.data.data?.data?.length || 0 : 0,
       matches: matchesRes.status === "fulfilled" ? matchesRes.value.data.data?.data?.length || 0 : 0,
-      liked: likedRes.status === "fulfilled" ? likedRes.value.data.data?.length || 0 : 0,
-      crushes: crushesReceivedRes.status === "fulfilled" ? crushesReceivedRes.value.data.data?.length || 0 : 0,
-    }
+ liked: likedRes.status === "fulfilled" ? likedRes.value.data.data?.data?.length || 0 : 0,
+crushes: crushesReceivedRes.status === "fulfilled" ? crushesReceivedRes.value.data.data?.data?.length || 0 : 0,  }
   },
 })
 
@@ -40,12 +39,12 @@ const { data: unreadCount = 0 } = useQuery({
 })
 
   const { data: recentAlarms } = useQuery({
-    queryKey: ["recent-alarms"],
-    queryFn: async () => {
-      const res = await api.get("/alarms")
-      return res.data.data?.slice(0, 3) || []
-    },
-  })
+  queryKey: ["recent-alarms"],
+  queryFn: async () => {
+    const res = await api.get("/alarms")
+    return res.data.data?.data?.slice(0, 3) || []
+  },
+})
 
   useEffect(() => {
     if (recentAlarms && recentAlarms.length > 0) {
