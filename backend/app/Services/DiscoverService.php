@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DiscoverService
 {
@@ -78,6 +79,9 @@ class DiscoverService
 
         $users = $query->paginate($perPage);
 
+        Log::info('crushesSentMap', $crushesSentMap->toArray());
+        Log::info('discover user ids', $users->pluck('id')->toArray());
+
         $users->getCollection()->transform(function ($u) use ($crushesSentMap) {
             $u->already_liked = $crushesSentMap->has($u->id);
             $u->crush_id = $crushesSentMap->get($u->id);
@@ -85,26 +89,5 @@ class DiscoverService
         });
 
         return $users;
-    }
-
-    public function getUserProfile(User $viewer, string $userId): ?User
-    {
-        $blocked = DB::table('blocks')
-            ->where(function ($q) use ($viewer, $userId) {
-                $q->where('user_id', $viewer->id)->where('blocked_user_id', $userId);
-            })
-            ->orWhere(function ($q) use ($viewer, $userId) {
-                $q->where('user_id', $userId)->where('blocked_user_id', $viewer->id);
-            })
-            ->exists();
-
-        if ($blocked) {
-            return null;
-        }
-
-        return User::where('id', $userId)
-            ->where('account_status', 'active')
-            ->with(['profile', 'interests', 'photos'])
-            ->first();
     }
 }
