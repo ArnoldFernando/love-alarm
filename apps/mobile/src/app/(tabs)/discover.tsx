@@ -77,30 +77,39 @@ export default function DiscoverScreen() {
 
       try {
         const res = await api.get("/discover", { params })
-        console.log("Discover request completed", res.status)
         return res.data.data?.data || []
       } catch (err: any) {
-        console.log("Discover request failed", err.response?.status)
         throw err
       }
     },
   })
 
   const crushMutation = useMutation({
-    mutationFn: async (toUserId: string) => {
-      return api.post("/crushes", { to_user_id: toUserId })
-    },
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["discover"] })
-      queryClient.invalidateQueries({ queryKey: ["crushes"] })
-      queryClient.invalidateQueries({ queryKey: ["matches"] })
-      queryClient.invalidateQueries({ queryKey: ["home-stats"] })
-      if (res.data.data.match_created) {
-        Alert.alert("It's a match! 🎉", "You both liked each other.")
-      }
-    },
-  })
-
+  mutationFn: async (toUserId: string) => {
+    return api.post("/crushes", { to_user_id: toUserId })
+  },
+  onSuccess: (res, toUserId) => {
+    // Update the liked user's flag directly in the cached discover data, instead of refetching everything
+    queryClient.setQueryData(["discover", filters], (old: any) => {
+      if (!old) return old
+      return old.map((u: UserProfile) =>
+        u.id === toUserId
+          ? { ...u, already_liked: true, crush_id: res.data.data.crush.id }
+          : u
+      )
+    })
+    queryClient.invalidateQueries({ queryKey: ["crushes-sent"] })
+    queryClient.invalidateQueries({ queryKey: ["crushes-received"] })
+    queryClient.invalidateQueries({ queryKey: ["matches"] })
+    queryClient.invalidateQueries({ queryKey: ["home-stats"] })
+    if (res.data.data.match_created) {
+      Alert.alert("It's a match! 🎉", "You both liked each other.")
+    }
+  },
+  onError: (err: any) => {
+    Alert.alert("Something went wrong", err.response?.data?.message || "Could not like this profile.")
+  },
+})
   const unlikeMutation = useMutation({
     mutationFn: async (crushId: string) => {
       return api.delete(`/crushes/${crushId}`)
@@ -115,40 +124,43 @@ export default function DiscoverScreen() {
     },
   })
 
-  const handleToggleLike = () => {
-    if (!users || !users[currentIndex]) return
-    const current = users[currentIndex]
+ const handleToggleLike = () => {
+  if (!users || !users[currentIndex]) return
+  const current = users[currentIndex]
 
-    if (current.already_liked) {
-      if (current.crush_id) {
-        unlikeMutation.mutate(current.crush_id)
-      }
-      return
+  if (current.already_liked) {
+    if (current.crush_id) {
+      unlikeMutation.mutate(current.crush_id)
     }
-
-    if (showLikedOverlay) return
-
-    crushMutation.mutate(current.id)
-    setShowLikedOverlay(true)
-    heartScale.setValue(0)
-
-    Animated.sequence([
-      Animated.spring(heartScale, {
-        toValue: 1,
-        friction: 4,
-        useNativeDriver: true,
-      }),
-      Animated.delay(350),
-      Animated.timing(heartScale, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowLikedOverlay(false)
-      setCurrentIndex((prev) => prev + 1)
-    })
+    return
   }
+
+  if (showLikedOverlay) return
+
+  crushMutation.mutate(current.id, {
+    onSuccess: () => {
+      setShowLikedOverlay(true)
+      heartScale.setValue(0)
+
+      Animated.sequence([
+        Animated.spring(heartScale, {
+          toValue: 1,
+          friction: 4,
+          useNativeDriver: true,
+        }),
+        Animated.delay(350),
+        Animated.timing(heartScale, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowLikedOverlay(false)
+        setCurrentIndex((prev) => prev + 1)
+      })
+    },
+  })
+}
 
   const handleSkip = () => {
     setCurrentIndex((prev) => prev + 1)
@@ -266,15 +278,28 @@ export default function DiscoverScreen() {
                 </View>
 
                 {currentUser.already_liked && (
-                  <View
-                    style={{ position: "absolute", top: 12, right: 12 }}
-                    className="flex-row items-center bg-rose-500 px-3 py-1.5 rounded-full shadow-md"
-                  >
-                    <Heart size={14} color="#FFFFFF" fill="#FFFFFF" />
-                    <Text className="text-white text-xs font-semibold ml-1">Liked</Text>
-                  </View>
-                )}
-
+  <View
+    style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+    pointerEvents="none"
+  >
+    {/* Dimming overlay so liked cards are visually distinct even without reading text */}
+    <View
+      style={{
+        position: "absolute",
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.15)",
+      }}
+    />
+    {/* Bigger, bolder badge */}
+    <View
+      style={{ position: "absolute", top: 14, right: 14 }}
+      className="flex-row items-center bg-rose-600 px-4 py-2 rounded-full shadow-lg border-2 border-white"
+    >
+      <Heart size={18} color="#FFFFFF" fill="#FFFFFF" />
+      <Text className="text-white text-sm font-bold ml-1.5">LIKED</Text>
+    </View>
+  </View>
+)}
                 <LinearGradient
                   colors={["transparent", "rgba(190,18,60,0.15)", "rgba(76,5,25,0.9)"]}
                   style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 20 }}
@@ -351,45 +376,63 @@ export default function DiscoverScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={handleToggleLike}
-                disabled={crushMutation.isPending || unlikeMutation.isPending || showLikedOverlay}
-                className={`w-20 h-20 rounded-full items-center justify-center ${
-                  currentUser?.already_liked ? "bg-white border-2 border-rose-500" : ""
-                }`}
-                style={
-                  currentUser?.already_liked
-                    ? {
-                        shadowColor: "#E11D48",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 10,
-                        elevation: 5,
-                      }
-                    : undefined
-                }
-              >
-                {currentUser?.already_liked ? (
-                  <Heart size={32} color="#E11D48" fill="#E11D48" />
-                ) : (
-                  <LinearGradient
-                    colors={["#FB7185", "#E11D48"]}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: 40,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      shadowColor: "#E11D48",
-                      shadowOffset: { width: 0, height: 6 },
-                      shadowOpacity: 0.35,
-                      shadowRadius: 12,
-                      elevation: 6,
-                    }}
-                  >
-                    <Heart size={32} color="#FFFFFF" fill="#FFFFFF" />
-                  </LinearGradient>
-                )}
-              </TouchableOpacity>
+  onPress={handleToggleLike}
+  disabled={crushMutation.isPending || unlikeMutation.isPending || showLikedOverlay}
+  className={`w-20 h-20 rounded-full items-center justify-center ${
+    currentUser?.already_liked ? "bg-white border-2 border-rose-500" : ""
+  }`}
+  style={
+    currentUser?.already_liked
+      ? {
+          shadowColor: "#E11D48",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 10,
+          elevation: 5,
+        }
+      : undefined
+  }
+>
+  {currentUser?.already_liked ? (
+    <View
+      style={{
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#E11D48",
+        borderWidth: 3,
+        borderColor: "#FBCFE8",
+        shadowColor: "#E11D48",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 6,
+      }}
+    >
+      <Heart size={32} color="#FFFFFF" fill="#FFFFFF" />
+    </View>
+  ) : (
+    <LinearGradient
+      colors={["#FB7185", "#E11D48"]}
+      style={{
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#E11D48",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+        elevation: 6,
+      }}
+    >
+      <Heart size={32} color="#FFFFFF" fill="#FFFFFF" />
+    </LinearGradient>
+  )}
+</TouchableOpacity>
             </View>
           </View>
         ) : (

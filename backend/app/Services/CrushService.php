@@ -163,4 +163,39 @@ class CrushService
             ->with('fromUser.profile', 'fromUser.photos')
             ->get();
     }
+
+    public function removeCrush(User $user, string $crushId): array
+    {
+        $crush = Crush::find($crushId);
+
+        if (!$crush) {
+            return [
+                'success' => false,
+                'message' => 'Crush not found.',
+            ];
+        }
+
+        if ($crush->from_user_id !== $user->id) {
+            return [
+                'success' => false,
+                'message' => 'You do not have permission to delete this crush.',
+            ];
+        }
+
+        try {
+            DB::transaction(function () use ($crush) {
+                $crush->delete();
+            });
+
+            return [
+                'success' => true,
+                'message' => 'Crush removed successfully.',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to remove crush.',
+            ];
+        }
+    }
 }

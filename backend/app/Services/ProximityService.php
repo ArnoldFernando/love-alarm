@@ -249,13 +249,11 @@ class ProximityService
         return DB::table('blocks')
             ->where('user_id', $user->id)
             ->orWhere('blocked_user_id', $user->id)
-            ->pluck('user_id')
-            ->merge(
-                DB::table('blocks')
-                    ->where('user_id', $user->id)
-                    ->orWhere('blocked_user_id', $user->id)
-                    ->pluck('blocked_user_id')
+            ->select(
+                DB::raw("CASE WHEN user_id = ? THEN blocked_user_id ELSE user_id END as blocked_id")
             )
+            ->setBindings([$user->id], 'select')
+            ->pluck('blocked_id')
             ->unique()
             ->values()
             ->all();
@@ -283,7 +281,7 @@ class ProximityService
         $deleted = 0;
 
         foreach ($keys as $key) {
-            if (! Redis::ttl($key)) {
+            if (Redis::ttl($key) <= 0) {
                 Redis::del($key);
                 $deleted++;
             }
@@ -298,7 +296,8 @@ class ProximityService
         $blockedIds = $this->getBlockedUserIds($user);
 
         $candidateKeys = Redis::keys(self::REDIS_PREFIX . '*');
-        $nearby = [];
+        $nearbyRaw = [];
+        $targetIds = [];
 
         $redisKeyPrefix = config('database.redis.options.prefix', '');
 
@@ -321,7 +320,26 @@ class ProximityService
                 continue;
             }
 
-            $targetUser = User::with(['settings', 'profile'])->find($targetId);
+            $nearbyRaw[] = [
+                'target_id' => $targetId,
+                'distance' => $distance,
+            ];
+            $targetIds[] = $targetId;
+        }
+
+        if (empty($targetIds)) {
+            return [];
+        }
+
+        $usersMap = User::with(['settings', 'profile'])
+            ->whereIn('id', $targetIds)
+            ->get()
+            ->keyBy('id');
+
+        $nearby = [];
+        foreach ($nearbyRaw as $item) {
+            $targetUser = $usersMap->get($item['target_id']);
+
             if (! $targetUser || ! $targetUser->isActive()) {
                 continue;
             }
@@ -334,7 +352,7 @@ class ProximityService
             $nearby[] = [
                 'user_id' => $targetUser->id,
                 'display_name' => $targetUser->profile->display_name ?? 'Someone',
-                'distance_meters' => round($distance, 1),
+                'distance_meters' => round($item['distance'], 1),
             ];
         }
 

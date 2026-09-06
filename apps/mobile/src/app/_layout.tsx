@@ -22,6 +22,7 @@ export default function RootLayout() {
   const isLoading = useAuthStore((state) => state.isLoading)
   const segments = useSegments()
   const [loveAlarmEnabled, setLoveAlarmEnabled] = useState(false)
+  const PROXIMITY_DEBUG_DISABLED = false
 
   useEffect(() => {
     initialize()
@@ -34,20 +35,23 @@ export default function RootLayout() {
     }
 
     api.get("/profile/settings").then((res) => {
-      const enabled = !!res.data.data?.love_alarm_enabled
-      setLoveAlarmEnabled(enabled)
-      if (enabled && res.data.data?.background_detection_enabled) {
-        startBackgroundLocationTracking()
-      }
-      // App just launched — if it's already in the foreground, start fast tracking too
-      if (enabled && AppState.currentState === "active") {
-        startForegroundLocationTracking()
-      }
-    }).catch(() => {
-      setLoveAlarmEnabled(false)
-    })
+  const enabled = !!res.data.data?.love_alarm_enabled
+  setLoveAlarmEnabled(enabled)
+
+  if (PROXIMITY_DEBUG_DISABLED) return
+
+  if (enabled && res.data.data?.background_detection_enabled) {
+    startBackgroundLocationTracking()
+  }
+  if (enabled && AppState.currentState === "active") {
+    startForegroundLocationTracking()
+  }
+}).catch(() => {
+  setLoveAlarmEnabled(false)
+})
 
     const subscription = AppState.addEventListener("change", (nextState) => {
+       if (PROXIMITY_DEBUG_DISABLED) return 
       if (!loveAlarmEnabled) return
       if (nextState === "active") {
         startForegroundLocationTracking()

@@ -35,24 +35,17 @@ export default function AlarmsScreen() {
     queryFn: async (): Promise<Alarm[]> => {
       const res = await api.get("/alarms")
 
-  console.log("Alarms request completed", res.status)
-
-  // Handle { data: [...] }
   if (Array.isArray(res.data?.data)) {
     return res.data.data
   }
 
-  // Handle { data: { data: [...] } }
   if (Array.isArray(res.data?.data?.data)) {
     return res.data.data.data
   }
 
-  // Handle direct [...]
   if (Array.isArray(res.data)) {
     return res.data
   }
-
-  console.warn("Unexpected alarms response format", res.status)
 
   return []
 }, enabled: isAuthenticated && !isLoading,

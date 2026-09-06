@@ -21,6 +21,7 @@ export default function HomeScreen() {
       api.get("/crushes"),
       api.get("/crushes/received"),
     ])
+
     return {
       alarms: alarmsRes.status === "fulfilled" ? alarmsRes.value.data.data?.data?.length || 0 : 0,
       matches: matchesRes.status === "fulfilled" ? matchesRes.value.data.data?.data?.length || 0 : 0,

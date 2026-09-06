@@ -1,12 +1,13 @@
 ﻿import * as Location from "expo-location"
 import * as TaskManager from "expo-task-manager"
 import { api } from "@/services/api"
+import { __DEV__ } from "react-native"
 
 export const LOCATION_TASK_NAME = "love-alarm-background-location"
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
-    console.log("Background location task failed")
+    if (__DEV__) console.log("Background location task failed")
     return
   }
   if (data) {
@@ -21,12 +22,10 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     }
 
     try {
-      // Store this device's own location first, so OTHER users' proximity
-      // checks can actually find it — checkProximity only reads, it never writes.
       await api.post("/proximity/update", coords)
       await api.post("/proximity/check", coords)
     } catch (err) {
-      console.log("Failed to send proximity data")
+      if (__DEV__) console.log("Failed to send proximity data")
     }
   }
 })
@@ -36,14 +35,14 @@ export async function startBackgroundLocationTracking() {
     const { status: foregroundStatus } =
       await Location.requestForegroundPermissionsAsync()
     if (foregroundStatus !== "granted") {
-      console.log("Foreground location permission not granted")
+      if (__DEV__) console.log("Foreground location permission not granted")
       return false
     }
 
     const { status: backgroundStatus } =
       await Location.requestBackgroundPermissionsAsync()
     if (backgroundStatus !== "granted") {
-      console.log("Background location permission not granted")
+      if (__DEV__) console.log("Background location permission not granted")
       return false
     }
 
@@ -65,7 +64,7 @@ export async function startBackgroundLocationTracking() {
 
     return true
   } catch (err) {
-    console.log("Failed to start background location tracking:", err)
+    if (__DEV__) console.log("Failed to start background location tracking:", err)
     return false
   }
 }
@@ -100,14 +99,14 @@ export async function startForegroundLocationTracking() {
           await api.post("/proximity/update", coords)
           await api.post("/proximity/check", coords)
         } catch (err) {
-          console.log("Failed to send foreground proximity data")
+          if (__DEV__) console.log("Failed to send foreground proximity data")
         }
       }
     )
 
     return true
   } catch (err) {
-    console.log("Failed to start foreground location tracking:", err)
+    if (__DEV__) console.log("Failed to start foreground location tracking:", err)
     return false
   }
 }

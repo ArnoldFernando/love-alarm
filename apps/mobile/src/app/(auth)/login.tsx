@@ -21,35 +21,21 @@ export default function LoginScreen() {
   })
 
  const onSubmit = async (data: any) => {
-  console.log("LOGIN: submit started")
-  console.log("LOGIN: API URL =", api.defaults.baseURL)
-
   setLoading(true)
 
   try {
-    console.log("LOGIN: sending request")
-
     const res = await api.post("/auth/login", {
       email: data.email.trim(),
       password: data.password,
     })
 
-    console.log("LOGIN: response received", res.status)
-    console.log("LOGIN: response data", JSON.stringify(res.data))
-
     if (res.data.success) {
-      console.log("LOGIN: saving auth")
-
       await setAuth(
         res.data.data.token,
         res.data.data.user
       )
 
-      console.log("LOGIN: auth saved, navigating")
-
       router.replace("/(tabs)")
-
-      console.log("LOGIN: navigation called")
     } else {
       Alert.alert(
         "Login Failed",
@@ -57,10 +43,6 @@ export default function LoginScreen() {
       )
     }
   } catch (err: any) {
-    console.error("LOGIN ERROR:", err)
-    console.error("LOGIN ERROR RESPONSE:", err.response?.data)
-    console.error("LOGIN ERROR MESSAGE:", err.message)
-
     Alert.alert(
       "Login Failed",
       err.response?.data?.message ||
@@ -68,7 +50,6 @@ export default function LoginScreen() {
         "Something went wrong"
     )
   } finally {
-    console.log("LOGIN: finally")
     setLoading(false)
   }
 }

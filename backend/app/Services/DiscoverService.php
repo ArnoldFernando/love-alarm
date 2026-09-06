@@ -14,12 +14,14 @@ class DiscoverService
     {
         $perPage = $filters['per_page'] ?? 20;
 
-        // Users the current user has blocked or been blocked by
         $blockedIds = DB::table('blocks')
             ->where('user_id', $user->id)
             ->orWhere('blocked_user_id', $user->id)
-            ->pluck('user_id', 'blocked_user_id')
-            ->flatten()
+            ->select(
+                DB::raw("CASE WHEN user_id = ? THEN blocked_user_id ELSE user_id END as blocked_id")
+            )
+            ->setBindings([$user->id], 'select')
+            ->pluck('blocked_id')
             ->unique()
             ->values()
             ->all();
@@ -89,5 +91,48 @@ class DiscoverService
         });
 
         return $users;
+    }
+
+    public function getUserProfile(User $requester, string $userId): ?array
+    {
+        $user = User::where('id', $userId)
+            ->where('account_status', 'active')
+            ->where('email_verified_at', '!=', null)
+            ->with(['profile', 'interests', 'photos', 'settings'])
+            ->first();
+
+        if (!$user) {
+            return null;
+        }
+
+        if (!$user->settings->profile_visible) {
+            return null;
+        }
+
+        $blocked = DB::table('blocks')
+            ->where(function ($q) use ($requester, $userId) {
+                $q->where('user_id', $requester->id)->where('blocked_user_id', $userId);
+            })
+            ->orWhere(function ($q) use ($requester, $userId) {
+                $q->where('user_id', $userId)->where('blocked_user_id', $requester->id);
+            })
+            ->exists();
+
+        if ($blocked) {
+            return null;
+        }
+
+        $crushed = $requester->crushesSent()
+            ->where('to_user_id', $userId)
+            ->first();
+
+        return [
+            'id' => $user->id,
+            'profile' => $user->profile,
+            'photos' => $user->photos,
+            'interests' => $user->interests,
+            'already_liked' => $crushed ? true : false,
+            'crush_id' => $crushed ? $crushed->id : null,
+        ];
     }
 }
