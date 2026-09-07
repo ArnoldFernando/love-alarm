@@ -48,19 +48,17 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   r => r,
   error => {
-    if (__DEV__) {
-      console.error(
-        "API ERROR:",
-        error.config?.method?.toUpperCase(),
-        error.config?.url,
-        error.response?.status,
-        error.response?.data
-      )
-    }
+    console.error(
+      "API ERROR:",
+      error.config?.method?.toUpperCase(),
+      error.config?.url,
+      error.response?.status,
+      error.response?.data
+    )
 
     if (error.response?.status === 401) {
-      useAuthStore.getState().logout()
-    }
+  console.error("API 401 → NOT LOGGING OUT (DEBUG)")
+}
 
     return Promise.reject(error)
   },

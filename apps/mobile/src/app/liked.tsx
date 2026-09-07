@@ -6,12 +6,12 @@ import { ChevronLeft, Heart } from "lucide-react-native"
 
 export default function LikedScreen() {
   const { data: crushes, isLoading } = useQuery({
-    queryKey: ["crushes-sent"],
-    queryFn: async () => {
-      const res = await api.get("/crushes")
-      return res.data.data
-    },
-  })
+  queryKey: ["crushes-sent"],
+  queryFn: async () => {
+    const res = await api.get("/crushes")
+    return res.data.data?.data || []
+  },
+})
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -46,8 +46,8 @@ export default function LikedScreen() {
 )}
               <View className="flex-1 ml-3">
                 <Text className="text-gray-900 font-semibold">
-                  {crush.to_user?.display_name || "Someone"}
-                </Text>
+  {crush.to_user?.profile?.display_name || "Someone"}
+</Text>
                 <Text className="text-gray-500 text-sm">You liked them</Text>
               </View>
               <Heart size={20} color="#E11D48" fill="#E11D48" />
